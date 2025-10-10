@@ -1,0 +1,14 @@
+{
+    "build": {
+      "command": "npm run build",
+      "output": "dist"
+    },
+    "routes": {
+      "/*": {
+        "static": true,
+        "headers": {
+          "Cache-Control": "public, max-age=3600"
+        }
+      }
+    }
+  }
