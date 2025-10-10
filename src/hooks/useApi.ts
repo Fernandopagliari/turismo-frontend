@@ -4,7 +4,7 @@ import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism
 // ✅ CORREGIDO: Usar la misma URL para desarrollo y producción
 const API_BASE = 'https://turismo-regional.up.railway.app';
 
-// ✅ FUNCIÓN getImageUrl CORREGIDA
+// ✅ FUNCIÓN getImageUrl CORREGIDA - Usar /static-assets/ en lugar de /assets/
 export const getImageUrl = (imagePath: string): string => {
   if (!imagePath) return '';
   
@@ -20,20 +20,23 @@ export const getImageUrl = (imagePath: string): string => {
   if (imagePath.includes('E:/Sistemas')) {
     // Extraer solo el nombre del archivo y construir ruta relativa
     const nombreArchivo = imagePath.split('/').pop() || imagePath.split('\\').pop();
-    const url = `${API_BASE}/assets/imagenes/${nombreArchivo}`;
+    // ✅ CORREGIDO: Usar /static-assets/
+    const url = `${API_BASE}/static-assets/imagenes/${nombreArchivo}`;
     console.log('🔄 getImageUrl ABSOLUTA → RELATIVA:', url);
     return url;
   }
   
   // Si es ruta relativa que empieza con "assets/"
   if (imagePath.startsWith('assets/')) {
-    const url = `${API_BASE}/${imagePath}`;
+    // ✅ CORREGIDO: Usar /static-assets/ y quitar el prefijo "assets/"
+    const url = `${API_BASE}/static-assets/${imagePath.replace('assets/', '')}`;
     console.log('📁 getImageUrl RELATIVA →', url);
     return url;
   }
   
   // Cualquier otro caso
-  const url = `${API_BASE}/assets/${imagePath}`;
+  // ✅ CORREGIDO: Usar /static-assets/
+  const url = `${API_BASE}/static-assets/${imagePath}`;
   console.log('📦 getImageUrl DEFAULT →', url);
   return url;
 };
