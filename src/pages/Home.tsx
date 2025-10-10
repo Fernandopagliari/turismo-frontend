@@ -4,16 +4,27 @@ import { Seccion, SubSeccion, RegionZona } from '../types/tourism';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import Sidebar from '../components/common/Sidebar';
-import Hero from '../components/home/Hero';
-import PlacesGrid from '../components/home/PlacesGrid';
-import SearchBar from '../components/home/SearchBar';
+
+// ❌ COMENTAMOS LOS IMPORTS ANTIGUOS (home/)
+// import Hero from '../components/home/Hero';
+// import PlacesGrid from '../components/home/PlacesGrid';
+// import SearchBar from '../components/home/SearchBar';
+// import PlaceDetail from '../components/home/PlaceDetail';
+
+// ✅ USAMOS LOS IMPORTS NUEVOS (places/) que SÍ funcionan
+import Hero from '../components/places/Hero';
+import PlacesGrid from '../components/places/PlacesGrid'; 
+import SearchBar from '../components/places/SearchBar';
 import PlaceDetail from '../components/places/PlaceDetail';
+
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 interface HomeProps {
   heroTitulo: string;
   heroImagen: string;
 }
+
+// ... el resto del código se mantiene igual
 
 const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   const { 

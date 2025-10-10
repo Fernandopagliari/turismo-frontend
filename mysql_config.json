@@ -1,0 +1,8 @@
+{
+    "host": "localhost",
+    "user": "root",
+    "password": "Perroponce@4472801",
+    "port": 3306,
+    "database": "databaseapp",
+    "base_url": "http://localhost:5000"
+}

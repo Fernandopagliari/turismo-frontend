@@ -25,34 +25,29 @@ const Hero: React.FC<HeroProps> = ({
     : subtitulo;
 
   return (
-    <div className="relative h-[400px] md:h-[500px] lg:h-[600px] flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-      {/* Imagen de fondo mostrando toda la imagen */}
-      <div 
-        className="absolute inset-0"
-        style={{ 
-          backgroundImage: `url(${imagenParaMostrar})`,
-          backgroundSize: 'contain',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundColor: '#1f2937'
-        }}
+    <div className="relative h-[400px] md:h-[500px] lg:h-[600px] flex items-center justify-center bg-gray-900 overflow-hidden">
+      
+      {/* ✅ SOLUCIÓN: Imagen como img tag - igual que el Header */}
+      <img 
+        src={imagenParaMostrar}
+        alt="Fondo hero"
+        className="absolute inset-0 w-full h-full object-cover" // ✅ object-cover en lugar de background-size
       />
       
-      {/* Overlay para mejor contraste y legibilidad */}
+      {/* Overlay suave */}
       <div className="absolute inset-0 bg-black bg-opacity-30"></div>
       
-      {/* Contenido centrado CON ANIMACIONES */}
+      {/* Contenido */}
       <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 drop-shadow-2xl animate-fade-in">
+        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 drop-shadow-2xl">
           {tituloParaMostrar}
         </h1>
-        <p className="text-lg md:text-xl lg:text-2xl drop-shadow-lg animate-fade-in-delayed mb-2">
+        <p className="text-lg md:text-xl lg:text-2xl drop-shadow-lg mb-2">
           {subtituloParaMostrar}
         </p>
 
-        {/* Badge de región seleccionada CON ANIMACIÓN */}
         {regionZonaSeleccionada && (
-          <div className="mt-4 inline-flex items-center space-x-2 bg-black bg-opacity-70 backdrop-blur-sm rounded-full px-4 py-2 border border-white border-opacity-30 animate-slide-up">
+          <div className="mt-4 inline-flex items-center space-x-2 bg-black bg-opacity-60 backdrop-blur-sm rounded-full px-4 py-2 border border-white border-opacity-30">
             <span className="text-yellow-400 text-lg">📍</span>
             <span className="text-sm md:text-base font-medium">
               Explorando: {regionZonaSeleccionada.nombre_region_zona}
@@ -60,10 +55,6 @@ const Hero: React.FC<HeroProps> = ({
           </div>
         )}
       </div>
-
-      {/* Gradiente suave en los bordes para transición */}
-      <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-gray-900 to-transparent"></div>
-      <div className="absolute top-0 left-0 w-full h-10 bg-gradient-to-b from-gray-900 to-transparent"></div>
     </div>
   );
 };
