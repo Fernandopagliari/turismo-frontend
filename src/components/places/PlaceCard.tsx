@@ -1,5 +1,6 @@
 import React from 'react';
 import { SubSeccion } from '../../types/tourism';
+import { getImageUrl } from '../../hooks/useApi'; // ✅ IMPORTAR DESDE USEAPI
 
 interface PlaceCardProps {
   lugar: SubSeccion;
@@ -8,7 +9,7 @@ interface PlaceCardProps {
 }
 
 const PlaceCard: React.FC<PlaceCardProps> = ({ lugar, onClick, mostrarCategoria = true }) => {
-  // Función para formatear teléfono (igual que en PlaceDetail)
+  // Función para formatear teléfono
   const formatearTelefono = (telefono: string): string => {
     return telefono.replace(/[\s\-\(\)]/g, '');
   };
@@ -20,7 +21,6 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ lugar, onClick, mostrarCategoria 
 
   const telefonoValido = lugar.numero_telefono && esTelefonoValido(lugar.numero_telefono);
 
-  // Evitar que el click del teléfono propague al card
   const handleTelefonoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -30,15 +30,17 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ lugar, onClick, mostrarCategoria 
       className="bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300 fade-in border border-gray-700"
       onClick={() => onClick(lugar)}
     >
-      {/* Imagen principal */}
+      {/* ✅ CORREGIDO: Usar getImageUrl importado */}
       <div className="h-48 overflow-hidden">
         <img 
-          src={lugar.imagen_ruta_relativa || '/placeholder.jpg'} 
+          src={getImageUrl(lugar.imagen_ruta_relativa) || '/placeholder.jpg'}  // ✅ USANDO GETIMAGEURL
           alt={lugar.nombre_sub_seccion}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           onError={(e) => {
+            console.error('❌ Error cargando imagen:', lugar.imagen_ruta_relativa);
             (e.target as HTMLImageElement).src = '/placeholder.jpg';
           }}
+          onLoad={() => console.log('✅ Imagen cargada:', getImageUrl(lugar.imagen_ruta_relativa))}
         />
       </div>
       
@@ -63,7 +65,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ lugar, onClick, mostrarCategoria 
           </div>
         )}
         
-        {/* Botón de WhatsApp en el card (opcional) */}
+        {/* Botón de WhatsApp */}
         {telefonoValido && (
           <a 
             href={`https://wa.me/${formatearTelefono(lugar.numero_telefono)}`}

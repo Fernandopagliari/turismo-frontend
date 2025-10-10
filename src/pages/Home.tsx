@@ -5,26 +5,19 @@ import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import Sidebar from '../components/common/Sidebar';
 
-// ❌ COMENTAMOS LOS IMPORTS ANTIGUOS (home/)
-// import Hero from '../components/home/Hero';
-// import PlacesGrid from '../components/home/PlacesGrid';
-// import SearchBar from '../components/home/SearchBar';
-// import PlaceDetail from '../components/home/PlaceDetail';
-
-// ✅ USAMOS LOS IMPORTS NUEVOS (places/) que SÍ funcionan
+// ✅ USAMOS SOLO LOS IMPORTS DE PLACES/
 import Hero from '../components/places/Hero';
 import PlacesGrid from '../components/places/PlacesGrid'; 
 import SearchBar from '../components/places/SearchBar';
 import PlaceDetail from '../components/places/PlaceDetail';
-
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { getImageUrl } from '../hooks/useApi';  
+
 
 interface HomeProps {
   heroTitulo: string;
   heroImagen: string;
 }
-
-// ... el resto del código se mantiene igual
 
 const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   const { 
@@ -154,7 +147,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
       {/* Header con selector de región/zona */}
       <Header 
         tituloApp={configuracion.titulo_app}
-        logoApp={configuracion.logo_app_ruta_relativa}
+        logoApp={getImageUrl(configuracion.logo_app_ruta_relativa)} // 
         onMenuToggle={handleMenuToggle}
         isMenuOpen={isMenuOpen}
         regionesZonas={regionesZonasHabilitadas} // NUEVO
@@ -180,7 +173,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
           <Hero 
             titulo={heroTitulo} 
             subtitulo={configuracion.footer_texto}
-            imagenFondo={heroImagen}
+            imagenFondo={getImageUrl(heroImagen)}
             regionZonaSeleccionada={
               regionZonaSeleccionada 
                 ? regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada) 

@@ -3,6 +3,7 @@ import { SubSeccion } from '../../types/tourism';
 import ImageGallery from './ImageGallery';
 import MapFallback from './MapFallback';
 import { useGeolocation } from '../../hooks/useGeolocation';
+import { getImageUrl } from '../../hooks/useApi'; // ✅ IMPORTAR DESDE USEAPI
 
 interface PlaceDetailProps {
   lugar: SubSeccion;
@@ -48,13 +49,13 @@ const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose }) => {
     return /^\d{8,15}$/.test(numeroLimpio);
   };
 
-  // Recolectar todas las imágenes y videos disponibles
+  // ✅ CORREGIDO: Usar getImageUrl para todas las imágenes
   const todosLosMedios = [
-    lugar.imagen_ruta_relativa,
-    lugar.foto1_ruta_relativa,
-    lugar.foto2_ruta_relativa,
-    lugar.foto3_ruta_relativa,
-    lugar.foto4_ruta_relativa
+    getImageUrl(lugar.imagen_ruta_relativa),
+    getImageUrl(lugar.foto1_ruta_relativa),
+    getImageUrl(lugar.foto2_ruta_relativa),
+    getImageUrl(lugar.foto3_ruta_relativa),
+    getImageUrl(lugar.foto4_ruta_relativa)
   ].filter(medio => medio && !medio.includes('null'));
 
   // Calcular distancia solo si las coordenadas son válidas

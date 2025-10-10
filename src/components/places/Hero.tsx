@@ -25,45 +25,43 @@ const Hero: React.FC<HeroProps> = ({
     : subtitulo;
 
   return (
-    <div className="relative h-[400px] md:h-[500px] lg:h-[600px] flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-      {/* Imagen de fondo mostrando toda la imagen */}
-      <div 
-        className="absolute inset-0"
-        style={{ 
-          backgroundImage: `url(${imagenParaMostrar})`,
-          backgroundSize: 'contain',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundColor: '#1f2937'
-        }}
-      />
-      
-      {/* Overlay para mejor contraste y legibilidad */}
-      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-      
-      {/* Contenido centrado CON ANIMACIONES */}
-      <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-        <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 drop-shadow-2xl animate-fade-in">
-          {tituloParaMostrar}
-        </h1>
-        <p className="text-lg md:text-xl lg:text-2xl drop-shadow-lg animate-fade-in-delayed mb-2">
-          {subtituloParaMostrar}
-        </p>
+    <div className="relative bg-gray-900 border-b border-gray-700">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between py-8 md:py-12">
+          
+          {/* Contenido de texto */}
+          <div className="flex-1 max-w-2xl">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-4">
+              {tituloParaMostrar}
+            </h1>
+            <p className="text-base md:text-lg lg:text-xl text-gray-300 mb-4">
+              {subtituloParaMostrar}
+            </p>
 
-        {/* Badge de región seleccionada CON ANIMACIÓN */}
-        {regionZonaSeleccionada && (
-          <div className="mt-4 inline-flex items-center space-x-2 bg-black bg-opacity-70 backdrop-blur-sm rounded-full px-4 py-2 border border-white border-opacity-30 animate-slide-up">
-            <span className="text-yellow-400 text-lg">📍</span>
-            <span className="text-sm md:text-base font-medium">
-              Explorando: {regionZonaSeleccionada.nombre_region_zona}
-            </span>
+            {regionZonaSeleccionada && (
+              <div className="inline-flex items-center space-x-2 bg-black bg-opacity-60 backdrop-blur-sm rounded-full px-4 py-2 border border-white border-opacity-30">
+                <span className="text-yellow-400 text-lg">📍</span>
+                <span className="text-sm md:text-base font-medium text-white">
+                  Explorando: {regionZonaSeleccionada.nombre_region_zona}
+                </span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Gradiente suave en los bordes para transición */}
-      <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-gray-900 to-transparent"></div>
-      <div className="absolute top-0 left-0 w-full h-10 bg-gradient-to-b from-gray-900 to-transparent"></div>
+          {/* Imagen compacta (similar al logo del Header) */}
+          <div className="hidden md:block flex-shrink-0 ml-8">
+            <div className="relative w-32 h-32 lg:w-40 lg:h-40 rounded-lg overflow-hidden border-2 border-gray-600 shadow-lg">
+              <img 
+                src={imagenParaMostrar}
+                alt="Imagen destacada"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };
