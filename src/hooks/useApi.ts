@@ -1,20 +1,26 @@
-// useApi.tsx - VERSIÓN SUPER SIMPLIFICADA
+// useApi.tsx - VERSIÓN CON PLACEHOLDER
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism';
 
-// ✅ URL BASE FIJA PERO CON FUNCIÓN DIRECTA
+// ✅ URL BASE FIJA 
 const API_BASE_URL = 'https://turismo-backend-av60.onrender.com';
 
-// ✅ getImageUrl DIRECTA - sin parámetros, sin lógica compleja
+// ✅ getImageUrl CON PLACEHOLDER - el backend no sirve imágenes estáticas
 export const getImageUrl = (imagePath: string): string => {
-  if (!imagePath) return '';
+  if (!imagePath) return '/placeholder.svg';
   
-  console.log('🖼️ getImageUrl DIRECTA - input:', imagePath);
+  console.log('🖼️ getImageUrl - input:', imagePath);
   
   // Si ya es URL completa, devolver tal cual
   if (imagePath.startsWith('http')) return imagePath;
   
-  // ✅ CONSTRUIR URL DIRECTAMENTE
+  // ✅ ESTRATEGIA TEMPORAL: Usar placeholder local
+  // El backend no tiene archivos estáticos, así que usamos placeholder
+  console.log('🖼️ Usando placeholder para:', imagePath);
+  return '/placeholder.svg';
+  
+  /* 
+  // CÓDIGO ORIGINAL (COMENTADO) - para reactivar cuando el backend sirva imágenes:
   let finalUrl = '';
   
   if (imagePath.startsWith('assets/')) {
@@ -25,8 +31,9 @@ export const getImageUrl = (imagePath: string): string => {
     finalUrl = `${API_BASE_URL}/assets/${imagePath}`;
   }
   
-  console.log('🖼️ getImageUrl DIRECTA - output:', finalUrl);
+  console.log('🖼️ getImageUrl - output:', finalUrl);
   return finalUrl;
+  */
 };
 
 export const useApi = () => {
@@ -176,7 +183,7 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlDirect, // ← FUNCIÓN DIRECTA
+    getImageUrl: getImageUrlDirect, // ← FUNCIÓN CON PLACEHOLDER
     buildUrl,
     loading,
     error,
