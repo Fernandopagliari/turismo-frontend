@@ -6,7 +6,7 @@ import { Configuracion, Seccion, SubSeccion, RegionZona, FrontendConfig } from '
 export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string => {
   if (!imagePath) return '/assets/placeholder.svg';
   
-  console.log('🖼️ getImageUrl - input:', imagePath, 'baseUrl:', apiBaseUrl);
+  console.log('🖼️ getImageUrl - input:', imagePath, 'apiBaseUrl:', apiBaseUrl);
   
   if (imagePath.startsWith('http')) return imagePath;
   
@@ -38,10 +38,10 @@ export const useApi = () => {
 
   // ✅ buildUrl que usa la base_url correcta
   const buildUrl = (endpoint: string): string => {
-    const baseUrl = getApiBaseUrl();
+    const apiBaseUrl = getApiBaseUrl();
     
-    if (baseUrl) {
-      return `${baseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    if (apiBaseUrl) {
+      return `${apiBaseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
     } else {
       return `/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
     }
@@ -162,14 +162,14 @@ export const useApi = () => {
 
   // ✅ getImageUrlWithConfig CORREGIDA - CON DEBUG
   const getImageUrlWithConfig = (imagePath: string): string => {
-    const baseUrl = getApiBaseUrl();
-    console.log('🔍 DEBUG getImageUrlWithConfig - baseUrl:', baseUrl, 'imagePath:', imagePath);
+    const apiBaseUrl = getApiBaseUrl();
+    console.log('🔍 DEBUG getImageUrlWithConfig - apiBaseUrl:', apiBaseUrl, 'imagePath:', imagePath);
     
-    if (!baseUrl) {
-      console.error('❌ CRÍTICO: baseUrl está vacío en getImageUrlWithConfig');
+    if (!apiBaseUrl) {
+      console.error('❌ CRÍTICO: apiBaseUrl está vacío en getImageUrlWithConfig');
     }
     
-    return getImageUrl(imagePath, baseUrl);
+    return getImageUrl(imagePath, apiBaseUrl);
   };
 
   // Resto de funciones auxiliares...
