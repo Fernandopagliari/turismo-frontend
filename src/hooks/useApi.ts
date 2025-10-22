@@ -7,8 +7,19 @@ const API_BASE_URL = 'https://turismo-backend-av60.onrender.com';
 
 // ✅ getImageUrl SUPER SIMPLE - SOLO placeholder
 export const getImageUrl = (imagePath: string): string => {
-  console.log('🖼️ getImageUrl - usando placeholder para:', imagePath);
-  return '/placeholder.svg'; // ← SOLO placeholder, nada más
+  if (!imagePath) return '/assets/placeholder.svg';
+  
+  console.log('🖼️ getImageUrl - input:', imagePath);
+  
+  // ✅ ESTRUCTURA CORREGIDA: Las imágenes están en /assets/imagenes/
+  if (imagePath.startsWith('assets/')) {
+    // "assets/imagenes/iconos/..." → "/assets/imagenes/iconos/..."
+    const correctedUrl = `/${imagePath}`;
+    console.log('🖼️ URL corregida:', correctedUrl);
+    return correctedUrl;
+  }
+  
+  return '/assets/placeholder.svg';
 };
 
 export const useApi = () => {

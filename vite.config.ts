@@ -12,9 +12,9 @@ export default defineConfig({
       }
     },
   },
-  // ✅ CONFIGURACIÓN CORREGIDA
+  // ✅ CONFIGURACIÓN CORREGIDA - ESTRUCTURA SIMPLE
   build: {
-    outDir: '../turismo-backend/assets',
-    assetsDir: 'assets',  // ← Cambiado de '' a 'assets'
+    outDir: 'dist',  // ← Genera en turismo-frontend/dist/
+    assetsDir: 'assets',
   }
 })
