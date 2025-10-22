@@ -2,27 +2,6 @@
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona, FrontendConfig } from '../types/tourism';
 
-// ✅ getImageUrl CORREGIDA
-export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string => {
-  if (!imagePath) return '/assets/placeholder.svg';
-  
-  console.log('🖼️ getImageUrl - input:', imagePath, 'apiBaseUrl:', apiBaseUrl);
-  
-  if (imagePath.startsWith('http')) return imagePath;
-  
-  // ✅ SOLO si tenemos apiBaseUrl, usarla
-  if (apiBaseUrl) {
-    const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    const fullUrl = `${apiBaseUrl}/assets/${cleanImagePath}`;
-    console.log('🖼️ URL completa backend:', fullUrl);
-    return fullUrl;
-  }
-  
-  // ✅ Si no hay apiBaseUrl, usar ruta relativa
-  console.log('⚠️ Sin base_url, usando ruta relativa');
-  return imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-};
-
 export const useApi = () => {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [frontendConfig, setFrontendConfig] = useState<FrontendConfig | null>(null);
@@ -31,12 +10,45 @@ export const useApi = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Obtener la base_url DEL ENDPOINT CORRECTO
+  // ✅ Obtener la apiBaseUrl
   const getApiBaseUrl = (): string => {
     return frontendConfig?.api_base_url || '';
   };
 
-  // ✅ buildUrl que usa la base_url correcta
+  // ✅ getImageUrl CORREGIDA - Maneja ambos casos
+  const getImageUrl = (imagePath: string): string => {
+    if (!imagePath) return '/assets/placeholder.svg';
+    
+    const apiBaseUrl = frontendConfig?.api_base_url || '';
+    console.log('🖼️ getImageUrl - apiBaseUrl:', apiBaseUrl, 'imagePath:', imagePath);
+    
+    if (imagePath.startsWith('http')) return imagePath;
+    
+    // ✅ SI tenemos apiBaseUrl, usarla para imágenes del backend
+    if (apiBaseUrl) {
+      const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+      const fullUrl = `${apiBaseUrl}/assets/${cleanImagePath}`;
+      console.log('🖼️ URL completa backend:', fullUrl);
+      return fullUrl;
+    }
+    
+    // ✅ SI NO tenemos apiBaseUrl, usar ruta local (build actual)
+    console.log('⚠️ Sin apiBaseUrl, usando ruta local del build');
+    
+    // Para el build actual que tiene assets/ duplicado
+    if (imagePath.startsWith('assets/')) {
+      // "assets/imagenes/..." → "/assets/assets/imagenes/..." (build actual)
+      return `/${imagePath}`;
+    }
+    
+    if (imagePath.startsWith('/')) {
+      return imagePath; // Mantener rutas absolutas
+    }
+    
+    return `/${imagePath}`; // Hacer ruta absoluta
+  };
+
+  // ✅ buildUrl que usa la apiBaseUrl correcta
   const buildUrl = (endpoint: string): string => {
     const apiBaseUrl = getApiBaseUrl();
     
@@ -160,18 +172,6 @@ export const useApi = () => {
     cargarDatos();
   }, []);
 
-  // ✅ getImageUrlWithConfig CORREGIDA - CON DEBUG
-  const getImageUrlWithConfig = (imagePath: string): string => {
-    const apiBaseUrl = getApiBaseUrl();
-    console.log('🔍 DEBUG getImageUrlWithConfig - apiBaseUrl:', apiBaseUrl, 'imagePath:', imagePath);
-    
-    if (!apiBaseUrl) {
-      console.error('❌ CRÍTICO: apiBaseUrl está vacío en getImageUrlWithConfig');
-    }
-    
-    return getImageUrl(imagePath, apiBaseUrl);
-  };
-
   // Resto de funciones auxiliares...
   const getSeccionesHabilitadas = (): Seccion[] =>
     secciones.filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
@@ -210,10 +210,6 @@ export const useApi = () => {
   const getRegionesZonasHabilitadas = (): RegionZona[] =>
     regionesZonas.filter(r => r.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
-  // ✅ DEBUG TEMPORAL
-  console.log('🔍 DEBUG useApi - frontendConfig:', frontendConfig);
-  console.log('🔍 DEBUG useApi - getApiBaseUrl():', getApiBaseUrl());
-
   return {
     configuracion,
     frontendConfig,
@@ -227,7 +223,7 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlWithConfig,
+    getImageUrl,
     buildUrl,
     loading,
     error,
