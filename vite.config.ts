@@ -4,15 +4,28 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0',
-    port: process.env.PORT ? parseInt(process.env.PORT) : 3000
+    port: 5173, // Puerto frontend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/static-assets': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
   },
-  preview: {
-    host: '0.0.0.0',
-    port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
-    allowedHosts: [
-      'turismo-regional-valle-fertil.up.railway.app',
-      '.railway.app'
-    ]
+  // ✅ AGREGA ESTA CONFIGURACIÓN DE BUILD
+  build: {
+    outDir: '../turismo-backend/assets',
+    assetsDir: '',  // ← Esto pone los archivos directamente en la raíz
+    rollupOptions: {
+      output: {
+        assetFileNames: '[name]-[hash][extname]',
+        chunkFileNames: '[name]-[hash].js',
+        entryFileNames: '[name]-[hash].js'
+      }
+    }
   }
 })

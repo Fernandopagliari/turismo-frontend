@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-// Importación alternativa - prueba esto
 import type { RegionZona } from '../../types/tourism';
+import { getImageUrl } from '../../hooks/useApi'; // ✅ Importamos la función para rutas locales/remotas
 
 interface HeaderProps {
   tituloApp: string;
@@ -11,10 +11,11 @@ interface HeaderProps {
   regionZonaSeleccionada?: number | null;
   onRegionZonaChange?: (regionZonaId: number | null) => void;
 }
-const Header: React.FC<HeaderProps> = ({ 
-  tituloApp, 
-  logoApp, 
-  onMenuToggle, 
+
+const Header: React.FC<HeaderProps> = ({
+  tituloApp,
+  logoApp,
+  onMenuToggle,
   isMenuOpen,
   regionesZonas = [],
   regionZonaSeleccionada = null,
@@ -57,9 +58,13 @@ const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
               {logoApp && (
                 <img 
-                  src={logoApp} 
+                  src={getImageUrl(logoApp)}   // ✅ Soporta ruta local/remota
                   alt="Logo" 
                   className="h-8 w-8 sm:h-10 sm:w-10 object-contain rounded-lg bg-white p-1 shadow-md border border-gray-600 flex-shrink-0"
+                  onError={(e) => {
+                    console.error('❌ Error cargando logo:', logoApp);
+                    (e.target as HTMLImageElement).src = '/placeholder.jpg'; // fallback
+                  }}
                 />
               )}
               <h1 className="text-base sm:text-lg font-semibold text-white truncate">
@@ -70,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* CENTRO: Selector de Región/Zona - Responsive */}
           <div className="flex items-center justify-center mx-2 sm:mx-4 flex-1 max-w-md">
-            {/* Versión Desktop/Tablet: Select normal */}
+            {/* Desktop/Tablet */}
             <div className="hidden sm:block w-full max-w-xs">
               <div className="relative">
                 <select
@@ -93,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {/* Versión Mobile: Botón compacto con dropdown */}
+            {/* Mobile */}
             <div className="sm:hidden relative">
               <button
                 onClick={() => setIsRegionSelectorOpen(!isRegionSelectorOpen)}
@@ -112,7 +117,6 @@ const Header: React.FC<HeaderProps> = ({
                 </svg>
               </button>
 
-              {/* Dropdown para móvil */}
               {isRegionSelectorOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-40 max-h-60 overflow-y-auto">
                   <button
@@ -139,9 +143,8 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* LADO DERECHO: Espacio balanceado */}
+          {/* LADO DERECHO: espacio balanceado */}
           <div className="flex-1 min-w-0 flex justify-end">
-            {/* Indicador de región seleccionada (solo móvil) */}
             {regionSeleccionada && (
               <div className="sm:hidden bg-blue-600 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap">
                 {regionSeleccionada.nombre_region_zona}
@@ -151,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Overlay para cerrar dropdown en móvil */}
+      {/* Overlay móvil */}
       {isRegionSelectorOpen && (
         <div 
           className="fixed inset-0 z-30 sm:hidden"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SubSeccion } from '../../types/tourism';
+import { useApi } from '../../../hooks/useApi'; // ✅ AGREGAR import
 
 interface SearchBarProps {
   onSearch: (resultados: SubSeccion[]) => void;
@@ -13,6 +14,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = "Buscar lugares turísticos..." 
 }) => {
   const [termino, setTermino] = useState('');
+  const { buildUrl } = useApi(); // ✅ AGREGAR hook
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +25,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/secciones`);
+      // ✅ CORREGIDO: Usar buildUrl en lugar de localhost:5000
+      const response = await fetch(buildUrl('/secciones'));
       const secciones = await response.json();
       
       const resultados = secciones.flatMap((seccion: any) => 

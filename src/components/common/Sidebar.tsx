@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Seccion } from '../../types/tourism';
 
-// ✅ Añadir función getImageUrl para iconos
+// ✅ Función para manejar rutas locales y remotas
 const getImageUrl = (rutaRelativa: string) => {
   if (!rutaRelativa) return '';
   
-  // Si ya es una URL completa, devolverla tal cual
   if (rutaRelativa.startsWith('http')) {
     return rutaRelativa;
   }
   
-  // Para rutas relativas, construir URL completa
   const baseUrl = window.location.origin;
-  
-  // Manejar diferentes tipos de assets
+
   if (rutaRelativa.startsWith('assets/') || rutaRelativa.startsWith('/assets/')) {
     return `${baseUrl}/static-assets/${rutaRelativa.replace(/^\/?assets\//, '')}`;
   }
-  
-  // Para otros tipos de rutas
+
   return `${baseUrl}/static-assets/${rutaRelativa}`;
 };
 
@@ -44,9 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -56,6 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 lg:z-40">
+      {/* Overlay para cerrar en móvil */}
       <div 
         className="absolute inset-0 bg-black bg-opacity-70 lg:bg-transparent" 
         onClick={onHomeClick}
@@ -65,7 +60,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         absolute left-0 top-0 h-full bg-gray-900 border-r border-gray-700 overflow-y-auto transition-all duration-300
         ${isMobile ? 'w-20' : 'w-16'}
       `}>
-        
         <div className="py-4 flex flex-col items-center space-y-3">
           
           {/* Botón Home */}
@@ -105,7 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="w-6 h-px bg-gray-700 my-2"></div>
 
-          {/* Secciones - CORREGIDO: Usar getImageUrl */}
+          {/* Secciones */}
           {secciones.map((seccion) => (
             <button
               key={seccion.id_seccion}
@@ -117,18 +111,15 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               {seccion.icono_seccion ? (
                 <img 
-                  src={getImageUrl(seccion.icono_seccion)}  // ✅ CORREGIDO
+                  src={getImageUrl(seccion.icono_seccion)}
                   alt={seccion.nombre_seccion}
                   className="w-6 h-6 object-contain"
-                  onError={(e) => {
-                    // Fallback si la imagen no carga
-                    e.currentTarget.style.display = 'none';
-                  }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (
-                <span className="text-2xl">🏛️</span>  // Fallback por defecto
+                <span className="text-2xl">🏛️</span>
               )}
-              
+
               {/* Tooltip */}
               <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg pointer-events-none">
                 {seccion.nombre_seccion} ({seccion.subsecciones.length})

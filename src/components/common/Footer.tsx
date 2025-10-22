@@ -6,17 +6,18 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ configuracion }) => {
+  // Solo incluir redes con URL válida
   const redesSociales = [
     { nombre: 'Facebook', url: configuracion.direccion_facebook, icono: '📘' },
     { nombre: 'Instagram', url: configuracion.direccion_instagram, icono: '📷' },
     { nombre: 'Twitter', url: configuracion.direccion_twitter, icono: '🐦' },
     { nombre: 'YouTube', url: configuracion.direccion_youtube, icono: '📺' },
-  ].filter(red => red.url);
+  ].filter(red => red.url && red.url.trim() !== '');
 
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-8">
-        {/* Contenido principal del footer */}
+        {/* Contenido principal */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Información de la app */}
           <div>

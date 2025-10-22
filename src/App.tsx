@@ -7,7 +7,7 @@ import "./index.css";
 import 'leaflet/dist/leaflet.css';
 
 const App: React.FC = () => {
-  const { configuracion, loading, error } = useApi();
+  const { configuracion, loading, error, apiBaseUrl } = useApi(); // ✅ AGREGAR apiBaseUrl
 
   // ✅ AGREGAR DIAGNÓSTICO
   console.log("🎯 App - Estado actual:");
@@ -15,6 +15,7 @@ const App: React.FC = () => {
   console.log("   configuracion:", configuracion);
   console.log("   error:", error);
   console.log("   habilitar:", configuracion?.habilitar);
+  console.log("   apiBaseUrl:", apiBaseUrl); // ✅ NUEVO: ver apiBaseUrl
 
   if (loading) {
     console.log("🔄 App: Mostrando LoadingSpinner");
@@ -29,6 +30,20 @@ const App: React.FC = () => {
           <h1 className="text-2xl font-bold mb-4">Error de conexión</h1>
           <p className="text-red-500 mb-2">{error}</p>
           <p>No se pudo cargar la configuración.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ NUEVA VALIDACIÓN: Esperar a que apiBaseUrl esté disponible
+  if (!apiBaseUrl) {
+    console.log("🔄 App: Esperando apiBaseUrl...");
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="mt-4">Configurando URLs...</p>
+          <p className="text-sm text-gray-500">API Base: {apiBaseUrl || 'Cargando...'}</p>
         </div>
       </div>
     );

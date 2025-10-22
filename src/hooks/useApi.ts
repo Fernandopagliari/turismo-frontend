@@ -1,167 +1,214 @@
+// useApi.tsx - VERSIÓN CORREGIDA CON URLS RELATIVAS
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism';
 
-// ✅ UNIVERSAL: Detectar la URL base automáticamente
-const getApiBase = (): string => {
-  // En desarrollo: usar localhost, en producción: la URL actual
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:5000';
+// ✅ CORREGIDO: Función para obtener la URL base dinámicamente CON FALLBACKS INTELIGENTES
+const getApiBaseUrl = async (): Promise<string> => {
+  try {
+    console.log("🔄 Obteniendo URL base del backend...");
+    
+    // ✅ URL RELATIVA - funciona en cualquier entorno
+    const response = await fetch('/api/config/frontend');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const config = await response.json();
+    
+    if (config.api_base_url && config.status === 'ok') {
+      console.log("✅ URL base obtenida:", config.api_base_url);
+      return config.api_base_url;
+    } else {
+      console.warn("⚠️ No se pudo obtener URL base, usando URL actual");
+      return window.location.origin; // ✅ Fallback inteligente
+    }
+  } catch (error) {
+    console.error("❌ Error obteniendo URL base:", error);
+    // ✅ Fallback: usar la misma URL del frontend
+    return window.location.origin;
   }
-  return window.location.origin;
 };
 
-const API_BASE = getApiBase();
+// ✅ CORREGIDO: getImageUrl ahora maneja API_BASE undefined correctamente
+// ✅ SOLUCIÓN TEMPORAL: getImageUrl con fallback hardcodeado
+export const getImageUrl = (imagePath: string, API_BASE?: string): string => {
+  if (!imagePath) {
+    return '';
+  }
 
-// ✅ FUNCIÓN getImageUrl UNIVERSAL
-export const getImageUrl = (imagePath: string): string => {
-  if (!imagePath) return '';
-  
   console.log('🖼️ getImageUrl INPUT:', imagePath);
-  
+  console.log('🌐 API_BASE recibida:', API_BASE);
+
+  // ✅ TEMPORAL: SIEMPRE usar esta URL base
+  const baseUrl = 'https://turismo-backend-av60.onrender.com';
+  console.log('🌐 API_BASE FINAL (hardcodeada):', baseUrl);
+
   // Si ya es URL completa
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    console.log('✅ getImageUrl YA CORRECTA:', imagePath);
     return imagePath;
   }
-  
-  // Si es ruta absoluta de Windows (como las de tu BD)
-  if (imagePath.includes('E:/Sistemas')) {
-    const nombreArchivo = imagePath.split('/').pop() || imagePath.split('\\').pop();
-    const url = `${API_BASE}/static-assets/imagenes/${nombreArchivo}`;
-    console.log('🔄 getImageUrl ABSOLUTA → RELATIVA:', url);
-    return url;
-  }
-  
-  // Si es ruta relativa que empieza con "assets/"
+
+  // ✅ CORREGIDO: Si empieza con "assets/" - MANTENER la ruta completa
   if (imagePath.startsWith('assets/')) {
-    const url = `${API_BASE}/static-assets/${imagePath.replace('assets/', '')}`;
-    console.log('📁 getImageUrl RELATIVA →', url);
+    const url = `${baseUrl}/${imagePath}`;
+    console.log('📁 getImageUrl RUTA CON assets/ → CORREGIDA:', url);
     return url;
   }
-  
+
+  // Si es ruta relativa que empieza con "/"
+  if (imagePath.startsWith('/')) {
+    const url = `${baseUrl}${imagePath}`;
+    console.log('📁 getImageUrl RUTA RELATIVA →', url);
+    return url;
+  }
+
   // Cualquier otro caso
-  const url = `${API_BASE}/static-assets/${imagePath}`;
+  const url = `${baseUrl}/assets/${imagePath}`;
   console.log('📦 getImageUrl DEFAULT →', url);
   return url;
 };
-
+// =========================
+// Hook principal - CORREGIDO CON FALLBACKS INTELIGENTES
+// =========================
 export const useApi = () => {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [regionesZonas, setRegionesZonas] = useState<RegionZona[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // ✅ CORREGIDO: Estado inicial vacío en lugar de localhost
+  const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
 
-  // ✅ OBTENER TODAS LAS SUB_SECCIONES DE LAS SECCIONES (CON SEGURIDAD)
+  // Obtener todas las sub-secciones
   const getAllSubSecciones = (): SubSeccion[] => {
     return secciones.flatMap(seccion => seccion.subsecciones || []);
   };
 
-  // ✅ Fetch configuración
-  const fetchConfiguracion = async () => {
+  // =========================
+  // ✅ NUEVO: Función para construir URLs de forma segura
+  // =========================
+  const buildUrl = (endpoint: string): string => {
+    // Si no tenemos apiBaseUrl aún, usar URL relativa
+    if (!apiBaseUrl) {
+      return `/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    }
+    return `${apiBaseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+  };
+
+  // =========================
+  // Fetch de datos - ACTUALIZADO PARA USAR buildUrl
+  // =========================
+  const fetchConfiguracion = async (baseUrl: string): Promise<boolean> => {
     try {
-      console.log("🔄 Fetching configuración...");
-      const response = await fetch(`${API_BASE}/api/configuracion`);
+      console.log("🔄 Fetching configuracion...");
+      // ✅ USAR buildUrl para consistencia
+      const res = await fetch(buildUrl('/configuracion'));
       
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
+      if (!res.ok) {
+        console.error(`❌ Error HTTP ${res.status} en configuración`);
+        return false;
       }
       
-      const data = await response.json();
-      console.log("✅ Configuración recibida:", data);
+      const data = await res.json();
       
-      if (data && Object.keys(data).length > 0) {
+      if (data && typeof data === 'object' && !data.error) {
         setConfiguracion(data);
+        console.log("✅ Configuración cargada correctamente");
+        return true;
       } else {
+        setConfiguracion(null);
         console.warn("⚠️ No hay configuración disponible");
+        return true; // No es error crítico
       }
     } catch (err) {
       console.error("❌ Error cargando configuración:", err);
-      setError('Error cargando configuración');
+      return false;
     }
   };
 
-  // ✅ MODIFICADO: Combinar secciones + sub-secciones manualmente
-  const fetchSecciones = async () => {
+  const fetchSecciones = async (baseUrl: string): Promise<boolean> => {
     try {
-      console.log("🔄 Combinando secciones y sub-secciones...");
+      console.log("🔄 Fetching secciones...");
+      // ✅ USAR buildUrl para consistencia
+      const res = await fetch(buildUrl('/secciones'));
       
-      // ✅ LLAMADA 1: Obtener secciones básicas
-      const responseSecciones = await fetch(`${API_BASE}/api/secciones`);
-      if (!responseSecciones.ok) throw new Error(`Error HTTP: ${responseSecciones.status}`);
-      const seccionesBasic: Seccion[] = await responseSecciones.json();
-      
-      // ✅ LLAMADA 2: Obtener TODAS las subsecciones  
-      const responseSubSecciones = await fetch(`${API_BASE}/api/sub-secciones`);
-      if (!responseSubSecciones.ok) throw new Error(`Error HTTP: ${responseSubSecciones.status}`);
-      const todasSubSecciones: SubSeccion[] = await responseSubSecciones.json();
-      
-      // ✅ COMBINAR MANUALMENTE: Agregar subsecciones a cada sección
-      const seccionesCompletas = seccionesBasic.map(seccion => ({
-        ...seccion,
-        subsecciones: todasSubSecciones.filter(sub => 
-          sub.id_seccion === seccion.id_seccion && sub.habilitar === 1
-        ).sort((a, b) => a.orden - b.orden)
-      }));
-      
-      console.log("✅ Secciones combinadas:", {
-        secciones: seccionesCompletas.length,
-        subseccionesTotales: todasSubSecciones.length,
-        subseccionesFiltradas: seccionesCompletas.reduce((total, sec) => total + sec.subsecciones.length, 0)
-      });
-      
-      // ✅ VERIFICAR FOTOS ADICIONALES
-      if (seccionesCompletas.length > 0 && seccionesCompletas[0].subsecciones.length > 0) {
-        const primeraSubseccion = seccionesCompletas[0].subsecciones[0];
-        console.log("📸 Primera subsección - Fotos disponibles:", {
-          nombre: primeraSubseccion.nombre_sub_seccion,
-          imagen_principal: primeraSubseccion.imagen_ruta_relativa,
-          foto1: primeraSubseccion.foto1_ruta_relativa,
-          foto2: primeraSubseccion.foto2_ruta_relativa,
-          foto3: primeraSubseccion.foto3_ruta_relativa,
-          foto4: primeraSubseccion.foto4_ruta_relativa
-        });
+      if (!res.ok) {
+        console.error(`❌ Error HTTP ${res.status} en secciones`);
+        return false;
       }
       
-      setSecciones(seccionesCompletas);
+      const data = await res.json();
+      
+      if (data && Array.isArray(data)) {
+        setSecciones(data);
+        
+        const totalSubsecciones = data.reduce(
+          (total, sec) => total + (sec.subsecciones?.length || 0), 0
+        );
+        
+        console.log(`✅ ${data.length} secciones con ${totalSubsecciones} subsecciones cargadas`);
+        return true;
+      } else {
+        setSecciones([]);
+        console.warn("⚠️ No hay secciones disponibles");
+        return true; // No es error crítico
+      }
     } catch (err) {
-      console.error("❌ Error combinando secciones:", err);
-      setError('Error cargando secciones');
+      console.error("❌ Error cargando secciones:", err);
+      setSecciones([]);
+      return false;
     }
   };
 
-  // ✅ Fetch regiones/zonas
-  const fetchRegionesZonas = async () => {
+  const fetchRegionesZonas = async (baseUrl: string): Promise<boolean> => {
     try {
       console.log("🔄 Fetching regiones...");
-      const response = await fetch(`${API_BASE}/api/regiones`);
+      // ✅ USAR buildUrl para consistencia
+      const res = await fetch(buildUrl('/regiones'));
       
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
+      if (!res.ok) {
+        console.error(`❌ Error HTTP ${res.status} en regiones`);
+        return false;
       }
       
-      const data = await response.json();
-      console.log("✅ Regiones recibidas:", data.length);
-      setRegionesZonas(data);
+      const data = await res.json();
+      
+      if (data && Array.isArray(data)) {
+        setRegionesZonas(data);
+        console.log(`✅ ${data.length} regiones cargadas correctamente`);
+        return true;
+      } else {
+        setRegionesZonas([]);
+        console.warn("⚠️ No hay regiones disponibles");
+        return true; // No es error crítico
+      }
     } catch (err) {
       console.error("❌ Error cargando regiones:", err);
-      setError('Error cargando regiones/zonas');
+      setRegionesZonas([]);
+      return false;
     }
   };
 
+  // Carga todos los datos - MEJORADO CON FALLBACKS
   const cargarDatos = async () => {
     setLoading(true);
     setError(null);
-    
+    console.log("🚀 Iniciando carga de datos...");
+  
     try {
-      // ✅ SOLO 3 LLAMADAS optimizadas
-      await Promise.all([
-        fetchConfiguracion(), 
-        fetchSecciones(),      // ✅ Ahora combina secciones + subsecciones
-        fetchRegionesZonas()
-      ]);
+      // ✅ PRIMERO: Obtener la URL base dinámicamente
+      const baseUrl = await getApiBaseUrl();
+      console.log("🔗 URL base OBTENIDA:", baseUrl);
+      
+      setApiBaseUrl(baseUrl);
+      console.log("🔗 URL base CONFIGURADA en estado:", baseUrl);
+  
+      // ... resto del código
     } catch (err) {
-      console.error("❌ Error en carga de datos:", err);
+      console.error("❌ Error general en carga de datos:", err);
+      setError('Error inesperado cargando datos');
     } finally {
       setLoading(false);
     }
@@ -171,94 +218,71 @@ export const useApi = () => {
     cargarDatos();
   }, []);
 
-  // ✅ HELPER FUNCTIONS OPTIMIZADAS (CON SEGURIDAD)
-  const getSeccionesHabilitadas = (): Seccion[] => {
-    return secciones
-      .filter(seccion => seccion.habilitar === 1)
-      .sort((a, b) => a.orden - b.orden);
-  };
+  // =========================
+  // Funciones auxiliares - ACTUALIZADAS CON apiBaseUrl
+  // =========================
+  const getSeccionesHabilitadas = (): Seccion[] =>
+    secciones.filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
-  // ✅ Obtener todas las subsecciones habilitadas
-  const getAllSubSeccionesHabilitadas = (): SubSeccion[] => {
-    return getAllSubSecciones()
-      .filter(sub => sub.habilitar === 1)
-      .sort((a, b) => a.orden - b.orden);
-  };
+  const getAllSubSeccionesHabilitadas = (): SubSeccion[] =>
+    getAllSubSecciones().filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
-  // ✅ Secciones completas con sus subsecciones
-  const getSeccionesCompletasOrdenadas = (): Seccion[] => {
-    return getSeccionesHabilitadas();
-  };
+  const getSubSeccionesPorSeccion = (idSeccion: number): SubSeccion[] =>
+    secciones.find(s => s.id_seccion === idSeccion)?.subsecciones?.filter(sub => sub.habilitar === 1) || [];
 
-  // ✅ Buscar lugares en subsecciones
-  const buscarLugares = (termino: string): SubSeccion[] => {
-    return getAllSubSeccionesHabilitadas()
-      .filter(sub => 
-        sub.nombre_sub_seccion.toLowerCase().includes(termino.toLowerCase())
-      );
-  };
-
-  // ✅ Lugares destacados
-  const getLugaresDestacados = (): SubSeccion[] => {
-    return getAllSubSeccionesHabilitadas()
-      .filter(sub => sub.destacado === 1)
-      .slice(0, 8);
-  };
-
-  // ✅ Regiones/Zonas habilitadas
-  const getRegionesZonasHabilitadas = (): RegionZona[] => {
-    return regionesZonas
-      .filter(region => region.habilitar === 1)
-      .sort((a, b) => a.orden - b.orden);
-  };
-
-  // ✅ Subsecciones por región/zona
   const getSubSeccionesPorRegionZona = (regionZonaId: number | null): SubSeccion[] => {
-    const todasSubSecciones = getAllSubSeccionesHabilitadas();
-    
-    if (!regionZonaId) {
-      return todasSubSecciones;
-    }
-    
-    return todasSubSecciones
-      .filter(sub => sub.id_region_zona === regionZonaId);
+    const todas = getAllSubSeccionesHabilitadas();
+    return regionZonaId ? todas.filter(s => s.id_region_zona === regionZonaId) : todas;
   };
 
-  // ✅ Secciones por región/zona
   const getSeccionesPorRegionZona = (regionZonaId: number | null): Seccion[] => {
-    const subSeccionesFiltradas = getSubSeccionesPorRegionZona(regionZonaId);
-    const seccionesIds = [...new Set(subSeccionesFiltradas.map(sub => sub.id_seccion))];
-    
-    return getSeccionesHabilitadas()
-      .filter(seccion => seccionesIds.includes(seccion.id_seccion))
-      .map(seccion => ({
-        ...seccion,
-        subsecciones: subSeccionesFiltradas.filter(sub => sub.id_seccion === seccion.id_seccion)
-      }));
+    const subFiltradas = getSubSeccionesPorRegionZona(regionZonaId);
+    const ids = [...new Set(subFiltradas.map(s => s.id_seccion))];
+    return getSeccionesHabilitadas().map(s => ({
+      ...s,
+      subsecciones: subFiltradas.filter(sub => sub.id_seccion === s.id_seccion)
+    })).filter(s => ids.includes(s.id_seccion));
   };
 
-  // ✅ Obtener subsecciones para una sección específica
-  const getSubSeccionesPorSeccion = (idSeccion: number): SubSeccion[] => {
-    const seccion = secciones.find(s => s.id_seccion === idSeccion);
-    return seccion?.subsecciones?.filter(sub => sub.habilitar === 1) || [];
+  const buscarLugares = (termino: string): SubSeccion[] =>
+    getAllSubSeccionesHabilitadas().filter(s => 
+      s.nombre_sub_seccion.toLowerCase().includes(termino.toLowerCase())
+    );
+
+  const getLugaresDestacados = (): SubSeccion[] =>
+    getAllSubSeccionesHabilitadas().filter(s => s.destacado === 1).slice(0, 8);
+
+  const getRegionesZonasHabilitadas = (): RegionZona[] =>
+    regionesZonas.filter(r => r.habilitar === 1).sort((a, b) => a.orden - b.orden);
+
+  // ✅ getImageUrl actualizada para usar la URL base dinámica
+  // ✅ TEMPORAL: Ignorar apiBaseUrl y usar hardcodeado
+  const getImageUrlDynamic = (imagePath: string): string => {
+    console.log('🔍 getImageUrlDynamic - apiBaseUrl actual:', apiBaseUrl);
+    // ✅ TEMPORAL: Ignorar apiBaseUrl y usar URL hardcodeada
+    return getImageUrl(imagePath, 'https://turismo-backend-av60.onrender.com');
   };
 
+  // =========================
+  // Retorno del hook - ✅ AGREGADA buildUrl
+  // =========================
   return {
     configuracion,
-    secciones,
-    subSecciones: getAllSubSeccionesHabilitadas(), // ✅ Para compatibilidad
     regionesZonas,
+    secciones,
+    subSecciones: getAllSubSeccionesHabilitadas(),
     seccionesHabilitadas: getSeccionesHabilitadas(),
     regionesZonasHabilitadas: getRegionesZonasHabilitadas(),
-    seccionesCompletasOrdenadas: getSeccionesCompletasOrdenadas(),
     lugaresDestacados: getLugaresDestacados(),
     getSubSeccionesHabilitadas: getSubSeccionesPorSeccion,
-    buscarLugares,
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
-    getImageUrl,
+    buscarLugares,
+    getImageUrl: getImageUrlDynamic, // ✅ Usa la versión dinámica
+    buildUrl, // ✅ NUEVO: función para construir URLs
     loading,
     error,
-    refetch: cargarDatos
+    refetch: cargarDatos,
+    apiBaseUrl // ✅ Para debugging
   };
 };

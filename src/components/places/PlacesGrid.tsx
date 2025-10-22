@@ -15,6 +15,7 @@ const PlacesGrid: React.FC<PlacesGridProps> = ({
   onPlaceClick,
   mostrarCategoria = true 
 }) => {
+  // Filtrar solo lugares habilitados
   const lugaresHabilitados = lugares.filter(lugar => lugar.habilitar === 1);
 
   if (lugaresHabilitados.length === 0) {
