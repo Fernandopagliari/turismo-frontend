@@ -1,6 +1,34 @@
-// useApi.tsx - VERSIÓN COMPLETA CORREGIDA
+// useApi.tsx - VERSIÓN COMPLETA CON EXPORTACIÓN
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona, FrontendConfig } from '../types/tourism';
+
+// ✅ EXPORTAR getImageUrl individualmente para componentes
+export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string => {
+  if (!imagePath) return '/assets/placeholder.svg';
+  
+  console.log('🖼️ getImageUrl exportada - apiBaseUrl:', apiBaseUrl, 'imagePath:', imagePath);
+  
+  if (imagePath.startsWith('http')) return imagePath;
+  
+  if (apiBaseUrl) {
+    const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    const fullUrl = `${apiBaseUrl}/assets/${cleanImagePath}`;
+    console.log('🖼️ URL completa backend:', fullUrl);
+    return fullUrl;
+  }
+  
+  console.log('⚠️ Sin apiBaseUrl, usando ruta local del build');
+  
+  if (imagePath.startsWith('assets/')) {
+    return `/${imagePath}`;
+  }
+  
+  if (imagePath.startsWith('/')) {
+    return imagePath;
+  }
+  
+  return `/${imagePath}`;
+};
 
 export const useApi = () => {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
@@ -10,45 +38,15 @@ export const useApi = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Obtener la apiBaseUrl
   const getApiBaseUrl = (): string => {
     return frontendConfig?.api_base_url || '';
   };
 
-  // ✅ getImageUrl CORREGIDA - Maneja ambos casos
-  const getImageUrl = (imagePath: string): string => {
-    if (!imagePath) return '/assets/placeholder.svg';
-    
-    const apiBaseUrl = frontendConfig?.api_base_url || '';
-    console.log('🖼️ getImageUrl - apiBaseUrl:', apiBaseUrl, 'imagePath:', imagePath);
-    
-    if (imagePath.startsWith('http')) return imagePath;
-    
-    // ✅ SI tenemos apiBaseUrl, usarla para imágenes del backend
-    if (apiBaseUrl) {
-      const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-      const fullUrl = `${apiBaseUrl}/assets/${cleanImagePath}`;
-      console.log('🖼️ URL completa backend:', fullUrl);
-      return fullUrl;
-    }
-    
-    // ✅ SI NO tenemos apiBaseUrl, usar ruta local (build actual)
-    console.log('⚠️ Sin apiBaseUrl, usando ruta local del build');
-    
-    // Para el build actual que tiene assets/ duplicado
-    if (imagePath.startsWith('assets/')) {
-      // "assets/imagenes/..." → "/assets/assets/imagenes/..." (build actual)
-      return `/${imagePath}`;
-    }
-    
-    if (imagePath.startsWith('/')) {
-      return imagePath; // Mantener rutas absolutas
-    }
-    
-    return `/${imagePath}`; // Hacer ruta absoluta
+  const getImageUrlWithConfig = (imagePath: string): string => {
+    const apiBaseUrl = getApiBaseUrl();
+    return getImageUrl(imagePath, apiBaseUrl);
   };
 
-  // ✅ buildUrl que usa la apiBaseUrl correcta
   const buildUrl = (endpoint: string): string => {
     const apiBaseUrl = getApiBaseUrl();
     
@@ -59,7 +57,6 @@ export const useApi = () => {
     }
   };
 
-  // ✅ Fetch configuración frontend
   const fetchFrontendConfig = async (): Promise<boolean> => {
     try {
       const url = '/api/config/frontend';
@@ -172,7 +169,6 @@ export const useApi = () => {
     cargarDatos();
   }, []);
 
-  // Resto de funciones auxiliares...
   const getSeccionesHabilitadas = (): Seccion[] =>
     secciones.filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
@@ -223,7 +219,7 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl,
+    getImageUrl: getImageUrlWithConfig,
     buildUrl,
     loading,
     error,
