@@ -1,71 +1,91 @@
-// useApi.tsx - VERSIÓN CON IMÁGENES DESDE BACKEND USANDO CONFIGURACIÓN
+// useApi.tsx - VERSIÓN CORREGIDA
+// useApi.tsx - VERSIÓN COMPLETA SIN HARCODING
 import { useState, useEffect } from 'react';
-import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism';
+import { Configuracion, Seccion, SubSeccion, RegionZona, FrontendConfig } from '../types/tourism';
 
-// ✅ getImageUrl QUE USA LA BASE_URL DE LA CONFIGURACIÓN
+// ✅ getImageUrl SIN HARCODING
 export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string => {
   if (!imagePath) return '/assets/placeholder.svg';
   
   console.log('🖼️ getImageUrl - input:', imagePath, 'baseUrl:', apiBaseUrl);
   
-  // Si ya es una URL completa, mantenerla
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
+  if (imagePath.startsWith('http')) return imagePath;
   
-  // Si tenemos apiBaseUrl, usar la estructura: base_url + /assets/ + endpoint
+  // ✅ SOLO si tenemos apiBaseUrl, usarla
   if (apiBaseUrl) {
-    // Remover cualquier / inicial del imagePath para evitar dobles //
     const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
     const fullUrl = `${apiBaseUrl}/assets/${cleanImagePath}`;
-    
     console.log('🖼️ URL completa backend:', fullUrl);
     return fullUrl;
   }
   
-  // Fallback: ruta local (solo para desarrollo)
-  console.log('⚠️ Usando fallback local para imagen');
+  // ✅ Si no hay apiBaseUrl, usar ruta relativa
+  console.log('⚠️ Sin base_url, usando ruta relativa');
   return imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
 };
 
 export const useApi = () => {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
+  const [frontendConfig, setFrontendConfig] = useState<FrontendConfig | null>(null);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [regionesZonas, setRegionesZonas] = useState<RegionZona[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Obtener la base_url de la configuración
+  // ✅ Obtener la base_url DEL ENDPOINT CORRECTO
   const getApiBaseUrl = (): string => {
-    return configuracion?.base_url || 'https://turismo-backend-av60.onrender.com';
+    return frontendConfig?.api_base_url || '';
   };
 
-  // ✅ buildUrl que usa la base_url de la configuración
+  // ✅ buildUrl que usa la base_url correcta - SIN HARCODING
   const buildUrl = (endpoint: string): string => {
     const baseUrl = getApiBaseUrl();
-    return `${baseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    
+    // ✅ Si tenemos base_url, usarla; si no, usar ruta relativa
+    if (baseUrl) {
+      return `${baseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    } else {
+      // ✅ Sin base_url, usar endpoint relativo
+      return `/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    }
   };
 
-  // ✅ getImageUrl que usa la base_url de la configuración
-  const getImageUrlWithConfig = (imagePath: string): string => {
-    const baseUrl = getApiBaseUrl();
-    return getImageUrl(imagePath, baseUrl);
+  // ✅ NUEVO: Fetch configuración frontend - SIN HARCODING
+  const fetchFrontendConfig = async (): Promise<boolean> => {
+    try {
+      // ✅ Usar ruta relativa - el browser completa con el origen actual
+      const url = '/api/config/frontend';
+      console.log("📡 Fetching FRONTEND config from:", url);
+      const res = await fetch(url);
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const data: FrontendConfig = await res.json();
+      console.log("🔍 Configuración Frontend recibida:", data);
+      
+      if (data && data.status === 'ok') {
+        setFrontendConfig(data);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("❌ Error frontend config:", err);
+      return false;
+    }
   };
 
-  // Fetch functions
+  // Fetch functions existentes (modificadas para usar buildUrl)
   const fetchConfiguracion = async (): Promise<boolean> => {
     try {
-      // Primera carga: usar URL por defecto para obtener la configuración
-      const initialUrl = 'https://turismo-backend-av60.onrender.com/api/configuracion';
-      console.log("📡 Fetching config from:", initialUrl);
-      const res = await fetch(initialUrl);
+      const url = buildUrl('/configuracion');
+      console.log("📡 Fetching config from:", url);
+      const res = await fetch(url);
       
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       
       const data = await res.json();
       if (data && !data.error) {
         setConfiguracion(data);
-        console.log("✅ Configuración cargada, base_url:", data.base_url);
         return true;
       }
       return false;
@@ -120,19 +140,20 @@ export const useApi = () => {
     setError(null);
     
     try {
-      // 1. Primero cargar configuración para obtener base_url
-      const configSuccess = await fetchConfiguracion();
+      // 1. PRIMERO cargar configuración frontend para obtener base_url
+      const frontendConfigSuccess = await fetchFrontendConfig();
       
-      if (configSuccess) {
-        // 2. Luego cargar el resto usando la base_url de la configuración
-        const [seccionesSuccess, regionesSuccess] = await Promise.all([
+      if (frontendConfigSuccess) {
+        // 2. LUEGO cargar el resto usando la base_url obtenida
+        const [configSuccess, seccionesSuccess, regionesSuccess] = await Promise.all([
+          fetchConfiguracion(),
           fetchSecciones(),
           fetchRegionesZonas()
         ]);
 
-        console.log(`📊 Carga completada: ${[configSuccess, seccionesSuccess, regionesSuccess].filter(Boolean).length}/3 exitosos`);
+        console.log(`📊 Carga completada: ${[frontendConfigSuccess, configSuccess, seccionesSuccess, regionesSuccess].filter(Boolean).length}/4 exitosos`);
       } else {
-        throw new Error('No se pudo cargar la configuración');
+        throw new Error('No se pudo cargar la configuración frontend');
       }
     } catch (err) {
       setError('Error cargando datos');
@@ -145,6 +166,12 @@ export const useApi = () => {
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  // ✅ getImageUrl que usa la base_url correcta - SIN HARCODING
+  const getImageUrlWithConfig = (imagePath: string): string => {
+    const baseUrl = getApiBaseUrl();
+    return getImageUrl(imagePath, baseUrl);
+  };
 
   // Resto de funciones auxiliares...
   const getSeccionesHabilitadas = (): Seccion[] =>
@@ -186,6 +213,7 @@ export const useApi = () => {
 
   return {
     configuracion,
+    frontendConfig,
     regionesZonas,
     secciones,
     subSecciones: getAllSubSeccionesHabilitadas(),
@@ -196,7 +224,7 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlWithConfig, // ← USA LA BASE_URL DE LA CONFIGURACIÓN
+    getImageUrl: getImageUrlWithConfig,
     buildUrl,
     loading,
     error,

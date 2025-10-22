@@ -15,6 +15,16 @@ export interface Configuracion {
   habilitar: number;
 }
 
+// ✅ NUEVO TIPO para la configuración del frontend
+export interface FrontendConfig {
+  api_base_url: string;
+  entorno: string;
+  status: string;
+  fuente?: string;
+  message?: string;
+}
+
+// ... el resto de tus tipos (SubSeccion, Seccion, RegionZona) se mantienen igual
 export interface SubSeccion {
   id_sub_seccion: number;
   id_seccion: number;
