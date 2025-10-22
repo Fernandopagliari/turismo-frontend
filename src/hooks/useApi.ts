@@ -1,11 +1,11 @@
-// useApi.tsx - VERSIÓN CON PLACEHOLDER
+// useApi.tsx - VERSIÓN CON IMÁGENES LOCALES DEL BUILD
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism';
 
 // ✅ URL BASE FIJA 
 const API_BASE_URL = 'https://turismo-backend-av60.onrender.com';
 
-// ✅ getImageUrl CON PLACEHOLDER - el backend no sirve imágenes estáticas
+// ✅ getImageUrl CORREGIDA - usa imágenes locales del build
 export const getImageUrl = (imagePath: string): string => {
   if (!imagePath) return '/placeholder.svg';
   
@@ -14,26 +14,28 @@ export const getImageUrl = (imagePath: string): string => {
   // Si ya es URL completa, devolver tal cual
   if (imagePath.startsWith('http')) return imagePath;
   
-  // ✅ ESTRATEGIA TEMPORAL: Usar placeholder local
-  // El backend no tiene archivos estáticos, así que usamos placeholder
-  console.log('🖼️ Usando placeholder para:', imagePath);
-  return '/placeholder.svg';
+  // ✅ ESTRATEGIA: Usar imágenes locales del build
+  // Las imágenes están en dist/assets/imagenes/... después del build
   
-  /* 
-  // CÓDIGO ORIGINAL (COMENTADO) - para reactivar cuando el backend sirva imágenes:
-  let finalUrl = '';
-  
+  // Si la ruta empieza con "assets/", convertir a ruta relativa del build
   if (imagePath.startsWith('assets/')) {
-    finalUrl = `${API_BASE_URL}/${imagePath}`;
-  } else if (imagePath.startsWith('/')) {
-    finalUrl = `${API_BASE_URL}${imagePath}`;
-  } else {
-    finalUrl = `${API_BASE_URL}/assets/${imagePath}`;
+    // Ejemplo: "assets/imagenes/iconos/valle_fertil_turismo_regional.jpg"
+    // → Se convierte en "/assets/imagenes/iconos/valle_fertil_turismo_regional.jpg"
+    const localUrl = `/${imagePath}`;
+    console.log('🖼️ Imagen local del build:', localUrl);
+    return localUrl;
   }
   
-  console.log('🖼️ getImageUrl - output:', finalUrl);
-  return finalUrl;
-  */
+  // Si es ruta relativa que empieza con "/", mantenerla
+  if (imagePath.startsWith('/')) {
+    console.log('🖼️ Ruta relativa mantenida:', imagePath);
+    return imagePath;
+  }
+  
+  // Cualquier otro caso, usar como ruta relativa
+  const localUrl = `/assets/${imagePath}`;
+  console.log('🖼️ Ruta default:', localUrl);
+  return localUrl;
 };
 
 export const useApi = () => {
@@ -183,7 +185,7 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlDirect, // ← FUNCIÓN CON PLACEHOLDER
+    getImageUrl: getImageUrlDirect, // ← FUNCIÓN CORREGIDA
     buildUrl,
     loading,
     error,
