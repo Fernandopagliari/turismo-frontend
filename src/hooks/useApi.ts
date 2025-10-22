@@ -1,13 +1,16 @@
-// useApi.tsx - VERSIÓN CORREGIDA CON URLS RELATIVAS
+// useApi.tsx - VERSIÓN CORREGIDA CON TIMING FIX
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism';
 
-// ✅ CORREGIDO: Función para obtener la URL base dinámicamente CON FALLBACKS INTELIGENTES
+// ✅ CONSTANTE GLOBAL para la URL base (fallback definitivo)
+const FALLBACK_BASE_URL = 'https://turismo-backend-av60.onrender.com';
+
+// ✅ Función para obtener URL base - SIMPLIFICADA
 const getApiBaseUrl = async (): Promise<string> => {
   try {
     console.log("🔄 Obteniendo URL base del backend...");
     
-    // ✅ URL RELATIVA - funciona en cualquier entorno
+    // ✅ URL RELATIVA que funciona en cualquier entorno
     const response = await fetch('/api/config/frontend');
     
     if (!response.ok) {
@@ -20,18 +23,16 @@ const getApiBaseUrl = async (): Promise<string> => {
       console.log("✅ URL base obtenida:", config.api_base_url);
       return config.api_base_url;
     } else {
-      console.warn("⚠️ No se pudo obtener URL base, usando URL actual");
-      return window.location.origin; // ✅ Fallback inteligente
+      console.warn("⚠️ No se pudo obtener URL base, usando fallback");
+      return FALLBACK_BASE_URL;
     }
   } catch (error) {
     console.error("❌ Error obteniendo URL base:", error);
-    // ✅ Fallback: usar la misma URL del frontend
-    return window.location.origin;
+    return FALLBACK_BASE_URL;
   }
 };
 
-// ✅ CORREGIDO: getImageUrl ahora maneja API_BASE undefined correctamente
-// ✅ SOLUCIÓN TEMPORAL: getImageUrl con fallback hardcodeado
+// ✅ getImageUrl CORREGIDA - SIEMPRE funciona
 export const getImageUrl = (imagePath: string, API_BASE?: string): string => {
   if (!imagePath) {
     return '';
@@ -40,16 +41,16 @@ export const getImageUrl = (imagePath: string, API_BASE?: string): string => {
   console.log('🖼️ getImageUrl INPUT:', imagePath);
   console.log('🌐 API_BASE recibida:', API_BASE);
 
-  // ✅ TEMPORAL: SIEMPRE usar esta URL base
-  const baseUrl = 'https://turismo-backend-av60.onrender.com';
-  console.log('🌐 API_BASE FINAL (hardcodeada):', baseUrl);
+  // ✅ USAR SIEMPRE FALLBACK_BASE_URL como fuente de verdad
+  const baseUrl = API_BASE || FALLBACK_BASE_URL;
+  console.log('🌐 API_BASE FINAL:', baseUrl);
 
   // Si ya es URL completa
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
 
-  // ✅ CORREGIDO: Si empieza con "assets/" - MANTENER la ruta completa
+  // ✅ CORREGIDO: Manejo consistente de rutas
   if (imagePath.startsWith('assets/')) {
     const url = `${baseUrl}/${imagePath}`;
     console.log('📁 getImageUrl RUTA CON assets/ → CORREGIDA:', url);
@@ -68,8 +69,9 @@ export const getImageUrl = (imagePath: string, API_BASE?: string): string => {
   console.log('📦 getImageUrl DEFAULT →', url);
   return url;
 };
+
 // =========================
-// Hook principal - CORREGIDO CON FALLBACKS INTELIGENTES
+// Hook principal - CORREGIDO
 // =========================
 export const useApi = () => {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
@@ -77,33 +79,23 @@ export const useApi = () => {
   const [regionesZonas, setRegionesZonas] = useState<RegionZona[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // ✅ CORREGIDO: Estado inicial vacío en lugar de localhost
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>('');
+  const [apiBaseUrl, setApiBaseUrl] = useState<string>(FALLBACK_BASE_URL); // ✅ Inicializado con fallback
 
   // Obtener todas las sub-secciones
   const getAllSubSecciones = (): SubSeccion[] => {
     return secciones.flatMap(seccion => seccion.subsecciones || []);
   };
 
-  // =========================
-  // ✅ NUEVO: Función para construir URLs de forma segura
-  // =========================
+  // ✅ buildUrl SIMPLIFICADA - siempre funciona
   const buildUrl = (endpoint: string): string => {
-    // Si no tenemos apiBaseUrl aún, usar URL relativa
-    if (!apiBaseUrl) {
-      return `/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
-    }
-    return `${apiBaseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    const base = apiBaseUrl || FALLBACK_BASE_URL;
+    return `${base}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
   };
 
-  // =========================
-  // Fetch de datos - ACTUALIZADO PARA USAR buildUrl
-  // =========================
+  // Fetch functions (mantener igual que antes)
   const fetchConfiguracion = async (baseUrl: string): Promise<boolean> => {
     try {
       console.log("🔄 Fetching configuracion...");
-      // ✅ USAR buildUrl para consistencia
       const res = await fetch(buildUrl('/configuracion'));
       
       if (!res.ok) {
@@ -120,7 +112,7 @@ export const useApi = () => {
       } else {
         setConfiguracion(null);
         console.warn("⚠️ No hay configuración disponible");
-        return true; // No es error crítico
+        return true;
       }
     } catch (err) {
       console.error("❌ Error cargando configuración:", err);
@@ -131,7 +123,6 @@ export const useApi = () => {
   const fetchSecciones = async (baseUrl: string): Promise<boolean> => {
     try {
       console.log("🔄 Fetching secciones...");
-      // ✅ USAR buildUrl para consistencia
       const res = await fetch(buildUrl('/secciones'));
       
       if (!res.ok) {
@@ -143,17 +134,15 @@ export const useApi = () => {
       
       if (data && Array.isArray(data)) {
         setSecciones(data);
-        
         const totalSubsecciones = data.reduce(
           (total, sec) => total + (sec.subsecciones?.length || 0), 0
         );
-        
         console.log(`✅ ${data.length} secciones con ${totalSubsecciones} subsecciones cargadas`);
         return true;
       } else {
         setSecciones([]);
         console.warn("⚠️ No hay secciones disponibles");
-        return true; // No es error crítico
+        return true;
       }
     } catch (err) {
       console.error("❌ Error cargando secciones:", err);
@@ -165,7 +154,6 @@ export const useApi = () => {
   const fetchRegionesZonas = async (baseUrl: string): Promise<boolean> => {
     try {
       console.log("🔄 Fetching regiones...");
-      // ✅ USAR buildUrl para consistencia
       const res = await fetch(buildUrl('/regiones'));
       
       if (!res.ok) {
@@ -182,7 +170,7 @@ export const useApi = () => {
       } else {
         setRegionesZonas([]);
         console.warn("⚠️ No hay regiones disponibles");
-        return true; // No es error crítico
+        return true;
       }
     } catch (err) {
       console.error("❌ Error cargando regiones:", err);
@@ -191,21 +179,34 @@ export const useApi = () => {
     }
   };
 
-  // Carga todos los datos - MEJORADO CON FALLBACKS
+  // ✅ Carga de datos OPTIMIZADA
   const cargarDatos = async () => {
     setLoading(true);
     setError(null);
     console.log("🚀 Iniciando carga de datos...");
   
     try {
-      // ✅ PRIMERO: Obtener la URL base dinámicamente
+      // ✅ Obtener URL base PRIMERO
       const baseUrl = await getApiBaseUrl();
-      console.log("🔗 URL base OBTENIDA:", baseUrl);
-      
+      console.log("🔗 URL base configurada:", baseUrl);
       setApiBaseUrl(baseUrl);
-      console.log("🔗 URL base CONFIGURADA en estado:", baseUrl);
-  
-      // ... resto del código
+
+      // ✅ Ejecutar todas las llamadas en paralelo
+      const [configSuccess, seccionesSuccess, regionesSuccess] = await Promise.all([
+        fetchConfiguracion(baseUrl),
+        fetchSecciones(baseUrl),
+        fetchRegionesZonas(baseUrl)
+      ]);
+
+      // ✅ Verificar resultados
+      const successes = [configSuccess, seccionesSuccess, regionesSuccess].filter(Boolean).length;
+      console.log(`📊 Resultados carga: ${successes} exitosos, ${3 - successes} fallidos`);
+
+      if (successes === 0) {
+        throw new Error('Todas las llamadas API fallaron');
+      }
+
+      console.log("✅ Carga de datos completada exitosamente");
     } catch (err) {
       console.error("❌ Error general en carga de datos:", err);
       setError('Error inesperado cargando datos');
@@ -218,9 +219,13 @@ export const useApi = () => {
     cargarDatos();
   }, []);
 
-  // =========================
-  // Funciones auxiliares - ACTUALIZADAS CON apiBaseUrl
-  // =========================
+  // ✅ getImageUrlDynamic CORREGIDA - timing garantizado
+  const getImageUrlDynamic = (imagePath: string): string => {
+    // ✅ Usar apiBaseUrl del estado (que SIEMPRE tiene valor por el fallback inicial)
+    return getImageUrl(imagePath, apiBaseUrl);
+  };
+
+  // Resto de funciones auxiliares (mantener igual)
   const getSeccionesHabilitadas = (): Seccion[] =>
     secciones.filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
@@ -255,17 +260,6 @@ export const useApi = () => {
   const getRegionesZonasHabilitadas = (): RegionZona[] =>
     regionesZonas.filter(r => r.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
-  // ✅ getImageUrl actualizada para usar la URL base dinámica
-  // ✅ TEMPORAL: Ignorar apiBaseUrl y usar hardcodeado
-  const getImageUrlDynamic = (imagePath: string): string => {
-    console.log('🔍 getImageUrlDynamic - apiBaseUrl actual:', apiBaseUrl);
-    // ✅ TEMPORAL: Ignorar apiBaseUrl y usar URL hardcodeada
-    return getImageUrl(imagePath, 'https://turismo-backend-av60.onrender.com');
-  };
-
-  // =========================
-  // Retorno del hook - ✅ AGREGADA buildUrl
-  // =========================
   return {
     configuracion,
     regionesZonas,
@@ -278,11 +272,11 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlDynamic, // ✅ Usa la versión dinámica
-    buildUrl, // ✅ NUEVO: función para construir URLs
+    getImageUrl: getImageUrlDynamic, // ✅ Ahora funciona correctamente
+    buildUrl,
     loading,
     error,
     refetch: cargarDatos,
-    apiBaseUrl // ✅ Para debugging
+    apiBaseUrl
   };
 };
