@@ -1,25 +1,31 @@
-// useApi.tsx - VERSIÓN CON IMÁGENES LOCALES DEL BUILD
+// useApi.tsx - VERSIÓN CON IMÁGENES DESDE BACKEND USANDO CONFIGURACIÓN
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism';
 
-// ✅ URL BASE FIJA 
-const API_BASE_URL = 'https://turismo-backend-av60.onrender.com';
-
-// ✅ getImageUrl SUPER SIMPLE - SOLO placeholder
-export const getImageUrl = (imagePath: string): string => {
+// ✅ getImageUrl QUE USA LA BASE_URL DE LA CONFIGURACIÓN
+export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string => {
   if (!imagePath) return '/assets/placeholder.svg';
   
-  console.log('🖼️ getImageUrl - input:', imagePath);
+  console.log('🖼️ getImageUrl - input:', imagePath, 'baseUrl:', apiBaseUrl);
   
-  // ✅ ESTRUCTURA CORREGIDA: Las imágenes están en /assets/imagenes/
-  if (imagePath.startsWith('assets/')) {
-    // "assets/imagenes/iconos/..." → "/assets/imagenes/iconos/..."
-    const correctedUrl = `/${imagePath}`;
-    console.log('🖼️ URL corregida:', correctedUrl);
-    return correctedUrl;
+  // Si ya es una URL completa, mantenerla
+  if (imagePath.startsWith('http')) {
+    return imagePath;
   }
   
-  return '/assets/placeholder.svg';
+  // Si tenemos apiBaseUrl, usar la estructura: base_url + /assets/ + endpoint
+  if (apiBaseUrl) {
+    // Remover cualquier / inicial del imagePath para evitar dobles //
+    const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    const fullUrl = `${apiBaseUrl}/assets/${cleanImagePath}`;
+    
+    console.log('🖼️ URL completa backend:', fullUrl);
+    return fullUrl;
+  }
+  
+  // Fallback: ruta local (solo para desarrollo)
+  console.log('⚠️ Usando fallback local para imagen');
+  return imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
 };
 
 export const useApi = () => {
@@ -29,23 +35,37 @@ export const useApi = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ buildUrl DIRECTA
-  const buildUrl = (endpoint: string): string => {
-    return `${API_BASE_URL}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+  // ✅ Obtener la base_url de la configuración
+  const getApiBaseUrl = (): string => {
+    return configuracion?.base_url || 'https://turismo-backend-av60.onrender.com';
   };
 
-  // Fetch functions (mantener igual)
+  // ✅ buildUrl que usa la base_url de la configuración
+  const buildUrl = (endpoint: string): string => {
+    const baseUrl = getApiBaseUrl();
+    return `${baseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+  };
+
+  // ✅ getImageUrl que usa la base_url de la configuración
+  const getImageUrlWithConfig = (imagePath: string): string => {
+    const baseUrl = getApiBaseUrl();
+    return getImageUrl(imagePath, baseUrl);
+  };
+
+  // Fetch functions
   const fetchConfiguracion = async (): Promise<boolean> => {
     try {
-      const url = buildUrl('/configuracion');
-      console.log("📡 Fetching config from:", url);
-      const res = await fetch(url);
+      // Primera carga: usar URL por defecto para obtener la configuración
+      const initialUrl = 'https://turismo-backend-av60.onrender.com/api/configuracion';
+      console.log("📡 Fetching config from:", initialUrl);
+      const res = await fetch(initialUrl);
       
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       
       const data = await res.json();
       if (data && !data.error) {
         setConfiguracion(data);
+        console.log("✅ Configuración cargada, base_url:", data.base_url);
         return true;
       }
       return false;
@@ -58,6 +78,7 @@ export const useApi = () => {
   const fetchSecciones = async (): Promise<boolean> => {
     try {
       const url = buildUrl('/secciones');
+      console.log("📡 Fetching secciones from:", url);
       const res = await fetch(url);
       
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -77,6 +98,7 @@ export const useApi = () => {
   const fetchRegionesZonas = async (): Promise<boolean> => {
     try {
       const url = buildUrl('/regiones');
+      console.log("📡 Fetching regiones from:", url);
       const res = await fetch(url);
       
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -98,15 +120,23 @@ export const useApi = () => {
     setError(null);
     
     try {
-      const [configSuccess, seccionesSuccess, regionesSuccess] = await Promise.all([
-        fetchConfiguracion(),
-        fetchSecciones(),
-        fetchRegionesZonas()
-      ]);
+      // 1. Primero cargar configuración para obtener base_url
+      const configSuccess = await fetchConfiguracion();
+      
+      if (configSuccess) {
+        // 2. Luego cargar el resto usando la base_url de la configuración
+        const [seccionesSuccess, regionesSuccess] = await Promise.all([
+          fetchSecciones(),
+          fetchRegionesZonas()
+        ]);
 
-      console.log(`📊 Carga completada: ${[configSuccess, seccionesSuccess, regionesSuccess].filter(Boolean).length}/3 exitosos`);
+        console.log(`📊 Carga completada: ${[configSuccess, seccionesSuccess, regionesSuccess].filter(Boolean).length}/3 exitosos`);
+      } else {
+        throw new Error('No se pudo cargar la configuración');
+      }
     } catch (err) {
       setError('Error cargando datos');
+      console.error('❌ Error en carga:', err);
     } finally {
       setLoading(false);
     }
@@ -115,9 +145,6 @@ export const useApi = () => {
   useEffect(() => {
     cargarDatos();
   }, []);
-
-  // ✅ getImageUrlDirect - simplemente devolver la función importada
-  const getImageUrlDirect = getImageUrl;
 
   // Resto de funciones auxiliares...
   const getSeccionesHabilitadas = (): Seccion[] =>
@@ -157,7 +184,6 @@ export const useApi = () => {
   const getRegionesZonasHabilitadas = (): RegionZona[] =>
     regionesZonas.filter(r => r.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
-  
   return {
     configuracion,
     regionesZonas,
@@ -170,11 +196,11 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlDirect, // ← FUNCIÓN CORREGIDA
+    getImageUrl: getImageUrlWithConfig, // ← USA LA BASE_URL DE LA CONFIGURACIÓN
     buildUrl,
     loading,
     error,
     refetch: cargarDatos,
-    apiBaseUrl: API_BASE_URL
+    apiBaseUrl: getApiBaseUrl()
   };
 };
