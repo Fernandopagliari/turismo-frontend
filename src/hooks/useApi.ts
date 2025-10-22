@@ -1,9 +1,8 @@
-// useApi.tsx - VERSIÓN CORREGIDA
-// useApi.tsx - VERSIÓN COMPLETA SIN HARCODING
+// useApi.tsx - VERSIÓN COMPLETA CORREGIDA
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona, FrontendConfig } from '../types/tourism';
 
-// ✅ getImageUrl SIN HARCODING
+// ✅ getImageUrl CORREGIDA
 export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string => {
   if (!imagePath) return '/assets/placeholder.svg';
   
@@ -37,23 +36,20 @@ export const useApi = () => {
     return frontendConfig?.api_base_url || '';
   };
 
-  // ✅ buildUrl que usa la base_url correcta - SIN HARCODING
+  // ✅ buildUrl que usa la base_url correcta
   const buildUrl = (endpoint: string): string => {
     const baseUrl = getApiBaseUrl();
     
-    // ✅ Si tenemos base_url, usarla; si no, usar ruta relativa
     if (baseUrl) {
       return `${baseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
     } else {
-      // ✅ Sin base_url, usar endpoint relativo
       return `/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
     }
   };
 
-  // ✅ NUEVO: Fetch configuración frontend - SIN HARCODING
+  // ✅ Fetch configuración frontend
   const fetchFrontendConfig = async (): Promise<boolean> => {
     try {
-      // ✅ Usar ruta relativa - el browser completa con el origen actual
       const url = '/api/config/frontend';
       console.log("📡 Fetching FRONTEND config from:", url);
       const res = await fetch(url);
@@ -74,7 +70,6 @@ export const useApi = () => {
     }
   };
 
-  // Fetch functions existentes (modificadas para usar buildUrl)
   const fetchConfiguracion = async (): Promise<boolean> => {
     try {
       const url = buildUrl('/configuracion');
@@ -140,11 +135,9 @@ export const useApi = () => {
     setError(null);
     
     try {
-      // 1. PRIMERO cargar configuración frontend para obtener base_url
       const frontendConfigSuccess = await fetchFrontendConfig();
       
       if (frontendConfigSuccess) {
-        // 2. LUEGO cargar el resto usando la base_url obtenida
         const [configSuccess, seccionesSuccess, regionesSuccess] = await Promise.all([
           fetchConfiguracion(),
           fetchSecciones(),
@@ -167,9 +160,15 @@ export const useApi = () => {
     cargarDatos();
   }, []);
 
-  // ✅ getImageUrl que usa la base_url correcta - SIN HARCODING
+  // ✅ getImageUrlWithConfig CORREGIDA - CON DEBUG
   const getImageUrlWithConfig = (imagePath: string): string => {
     const baseUrl = getApiBaseUrl();
+    console.log('🔍 DEBUG getImageUrlWithConfig - baseUrl:', baseUrl, 'imagePath:', imagePath);
+    
+    if (!baseUrl) {
+      console.error('❌ CRÍTICO: baseUrl está vacío en getImageUrlWithConfig');
+    }
+    
     return getImageUrl(imagePath, baseUrl);
   };
 
@@ -210,6 +209,10 @@ export const useApi = () => {
 
   const getRegionesZonasHabilitadas = (): RegionZona[] =>
     regionesZonas.filter(r => r.habilitar === 1).sort((a, b) => a.orden - b.orden);
+
+  // ✅ DEBUG TEMPORAL
+  console.log('🔍 DEBUG useApi - frontendConfig:', frontendConfig);
+  console.log('🔍 DEBUG useApi - getApiBaseUrl():', getApiBaseUrl());
 
   return {
     configuracion,
