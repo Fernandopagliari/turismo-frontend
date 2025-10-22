@@ -1,38 +1,38 @@
-// useApi.tsx - VERSIÓN CORREGIDA CON TIMING FIX
+// useApi.tsx - VERSIÓN CON URLs RELATIVAS INTELIGENTES
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism';
 
-// ✅ CONSTANTE GLOBAL para la URL base (fallback definitivo)
-const FALLBACK_BASE_URL = 'https://turismo-backend-av60.onrender.com';
+// ✅ ELIMINADO: No más URLs hardcodeadas
+// ✅ ESTRATEGIA: Usar URLs relativas que funcionen en cualquier entorno
 
-// ✅ Función para obtener URL base - SIMPLIFICADA
+// ✅ Función para obtener URL base - CON FALLBACKS INTELIGENTES
 const getApiBaseUrl = async (): Promise<string> => {
   try {
     console.log("🔄 Obteniendo URL base del backend...");
     
-    // ✅ URL RELATIVA que funciona en cualquier entorno
+    // ✅ PRIMERO: Intentar con URL relativa (funciona en mismo dominio)
     const response = await fetch('/api/config/frontend');
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    if (response.ok) {
+      const config = await response.json();
+      if (config.api_base_url && config.status === 'ok') {
+        console.log("✅ URL base obtenida del backend:", config.api_base_url);
+        return config.api_base_url;
+      }
     }
     
-    const config = await response.json();
+    // ✅ SEGUNDO: Si falla, usar el origen actual (mismo dominio del frontend)
+    console.warn("⚠️ Usando origen actual como URL base:", window.location.origin);
+    return window.location.origin;
     
-    if (config.api_base_url && config.status === 'ok') {
-      console.log("✅ URL base obtenida:", config.api_base_url);
-      return config.api_base_url;
-    } else {
-      console.warn("⚠️ No se pudo obtener URL base, usando fallback");
-      return FALLBACK_BASE_URL;
-    }
   } catch (error) {
-    console.error("❌ Error obteniendo URL base:", error);
-    return FALLBACK_BASE_URL;
+    console.error("❌ Error obteniendo URL base, usando origen actual:", error);
+    // ✅ FALLBACK: El mismo dominio donde está hosteado el frontend
+    return window.location.origin;
   }
 };
 
-// ✅ getImageUrl CORREGIDA - SIEMPRE funciona
+// ✅ getImageUrl CORREGIDA - URLs RELATIVAS INTELIGENTES
 export const getImageUrl = (imagePath: string, API_BASE?: string): string => {
   if (!imagePath) {
     return '';
@@ -41,37 +41,58 @@ export const getImageUrl = (imagePath: string, API_BASE?: string): string => {
   console.log('🖼️ getImageUrl INPUT:', imagePath);
   console.log('🌐 API_BASE recibida:', API_BASE);
 
-  // ✅ USAR SIEMPRE FALLBACK_BASE_URL como fuente de verdad
-  const baseUrl = API_BASE || FALLBACK_BASE_URL;
-  console.log('🌐 API_BASE FINAL:', baseUrl);
+  // ✅ ESTRATEGIA: Si no tenemos API_BASE, usar ruta relativa
+  const baseUrl = API_BASE || '';
+  console.log('🌐 ESTRATEGIA FINAL:', baseUrl ? 'URL absoluta' : 'URL relativa');
 
   // Si ya es URL completa
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
 
-  // ✅ CORREGIDO: Manejo consistente de rutas
+  // ✅ CORREGIDO: Manejo INTELIGENTE de rutas
   if (imagePath.startsWith('assets/')) {
-    const url = `${baseUrl}/${imagePath}`;
-    console.log('📁 getImageUrl RUTA CON assets/ → CORREGIDA:', url);
-    return url;
+    // Si tenemos baseUrl, construir URL completa
+    if (baseUrl) {
+      const url = `${baseUrl}/${imagePath}`;
+      console.log('📁 URL ABSOLUTA con assets/ →', url);
+      return url;
+    } else {
+      // ✅ URL RELATIVA - funciona en cualquier entorno
+      const url = `/${imagePath}`;
+      console.log('📁 URL RELATIVA con assets/ →', url);
+      return url;
+    }
   }
 
   // Si es ruta relativa que empieza con "/"
   if (imagePath.startsWith('/')) {
-    const url = `${baseUrl}${imagePath}`;
-    console.log('📁 getImageUrl RUTA RELATIVA →', url);
-    return url;
+    if (baseUrl) {
+      const url = `${baseUrl}${imagePath}`;
+      console.log('📁 URL ABSOLUTA relativa →', url);
+      return url;
+    } else {
+      // ✅ Mantener como ruta relativa
+      console.log('📁 URL RELATIVA mantenida →', imagePath);
+      return imagePath;
+    }
   }
 
   // Cualquier otro caso
-  const url = `${baseUrl}/assets/${imagePath}`;
-  console.log('📦 getImageUrl DEFAULT →', url);
-  return url;
+  if (baseUrl) {
+    const url = `${baseUrl}/assets/${imagePath}`;
+    console.log('📦 URL ABSOLUTA default →', url);
+    return url;
+  } else {
+    // ✅ URL relativa por defecto
+    const url = `/assets/${imagePath}`;
+    console.log('📦 URL RELATIVA default →', url);
+    return url;
+  }
 };
 
 // =========================
-// Hook principal - CORREGIDO
+// Hook principal - CON URLs RELATIVAS
 // =========================
 export const useApi = () => {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
@@ -79,24 +100,31 @@ export const useApi = () => {
   const [regionesZonas, setRegionesZonas] = useState<RegionZona[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>(FALLBACK_BASE_URL); // ✅ Inicializado con fallback
+  const [apiBaseUrl, setApiBaseUrl] = useState<string>(''); // ✅ Inicial vacío = URLs relativas
 
   // Obtener todas las sub-secciones
   const getAllSubSecciones = (): SubSeccion[] => {
     return secciones.flatMap(seccion => seccion.subsecciones || []);
   };
 
-  // ✅ buildUrl SIMPLIFICADA - siempre funciona
+  // ✅ buildUrl MEJORADA - URLs relativas por defecto
   const buildUrl = (endpoint: string): string => {
-    const base = apiBaseUrl || FALLBACK_BASE_URL;
-    return `${base}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    // Si no tenemos apiBaseUrl, usar URL relativa (funciona en mismo dominio)
+    if (!apiBaseUrl) {
+      return `/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    }
+    // Si tenemos apiBaseUrl, usar URL absoluta
+    return `${apiBaseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
   };
 
-  // Fetch functions (mantener igual que antes)
-  const fetchConfiguracion = async (baseUrl: string): Promise<boolean> => {
+  // Fetch functions actualizadas para usar buildUrl
+  const fetchConfiguracion = async (): Promise<boolean> => {
     try {
       console.log("🔄 Fetching configuracion...");
-      const res = await fetch(buildUrl('/configuracion'));
+      const url = buildUrl('/configuracion');
+      console.log("📡 URL de configuración:", url);
+      
+      const res = await fetch(url);
       
       if (!res.ok) {
         console.error(`❌ Error HTTP ${res.status} en configuración`);
@@ -120,10 +148,13 @@ export const useApi = () => {
     }
   };
 
-  const fetchSecciones = async (baseUrl: string): Promise<boolean> => {
+  const fetchSecciones = async (): Promise<boolean> => {
     try {
       console.log("🔄 Fetching secciones...");
-      const res = await fetch(buildUrl('/secciones'));
+      const url = buildUrl('/secciones');
+      console.log("📡 URL de secciones:", url);
+      
+      const res = await fetch(url);
       
       if (!res.ok) {
         console.error(`❌ Error HTTP ${res.status} en secciones`);
@@ -151,10 +182,13 @@ export const useApi = () => {
     }
   };
 
-  const fetchRegionesZonas = async (baseUrl: string): Promise<boolean> => {
+  const fetchRegionesZonas = async (): Promise<boolean> => {
     try {
       console.log("🔄 Fetching regiones...");
-      const res = await fetch(buildUrl('/regiones'));
+      const url = buildUrl('/regiones');
+      console.log("📡 URL de regiones:", url);
+      
+      const res = await fetch(url);
       
       if (!res.ok) {
         console.error(`❌ Error HTTP ${res.status} en regiones`);
@@ -188,14 +222,14 @@ export const useApi = () => {
     try {
       // ✅ Obtener URL base PRIMERO
       const baseUrl = await getApiBaseUrl();
-      console.log("🔗 URL base configurada:", baseUrl);
+      console.log("🔗 URL base configurada:", baseUrl || '(URLs relativas)');
       setApiBaseUrl(baseUrl);
 
-      // ✅ Ejecutar todas las llamadas en paralelo
+      // ✅ Ejecutar llamadas en paralelo
       const [configSuccess, seccionesSuccess, regionesSuccess] = await Promise.all([
-        fetchConfiguracion(baseUrl),
-        fetchSecciones(baseUrl),
-        fetchRegionesZonas(baseUrl)
+        fetchConfiguracion(),
+        fetchSecciones(),
+        fetchRegionesZonas()
       ]);
 
       // ✅ Verificar resultados
@@ -219,13 +253,12 @@ export const useApi = () => {
     cargarDatos();
   }, []);
 
-  // ✅ getImageUrlDynamic CORREGIDA - timing garantizado
+  // ✅ getImageUrlDynamic CORREGIDA - maneja tanto URLs absolutas como relativas
   const getImageUrlDynamic = (imagePath: string): string => {
-    // ✅ Usar apiBaseUrl del estado (que SIEMPRE tiene valor por el fallback inicial)
     return getImageUrl(imagePath, apiBaseUrl);
   };
 
-  // Resto de funciones auxiliares (mantener igual)
+  // Resto de funciones auxiliares (sin cambios)
   const getSeccionesHabilitadas = (): Seccion[] =>
     secciones.filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
@@ -272,7 +305,7 @@ export const useApi = () => {
     getSubSeccionesPorRegionZona,
     getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlDynamic, // ✅ Ahora funciona correctamente
+    getImageUrl: getImageUrlDynamic,
     buildUrl,
     loading,
     error,
