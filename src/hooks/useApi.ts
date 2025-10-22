@@ -5,37 +5,10 @@ import { Configuracion, Seccion, SubSeccion, RegionZona } from '../types/tourism
 // ✅ URL BASE FIJA 
 const API_BASE_URL = 'https://turismo-backend-av60.onrender.com';
 
-// ✅ getImageUrl CORREGIDA - usa imágenes locales del build
+// ✅ getImageUrl SUPER SIMPLE - SOLO placeholder
 export const getImageUrl = (imagePath: string): string => {
-  if (!imagePath) return '/placeholder.svg';
-  
-  console.log('🖼️ getImageUrl - input:', imagePath);
-  
-  // Si ya es URL completa, devolver tal cual
-  if (imagePath.startsWith('http')) return imagePath;
-  
-  // ✅ ESTRATEGIA: Usar imágenes locales del build
-  // Las imágenes están en dist/assets/imagenes/... después del build
-  
-  // Si la ruta empieza con "assets/", convertir a ruta relativa del build
-  if (imagePath.startsWith('assets/')) {
-    // Ejemplo: "assets/imagenes/iconos/valle_fertil_turismo_regional.jpg"
-    // → Se convierte en "/assets/imagenes/iconos/valle_fertil_turismo_regional.jpg"
-    const localUrl = `/${imagePath}`;
-    console.log('🖼️ Imagen local del build:', localUrl);
-    return localUrl;
-  }
-  
-  // Si es ruta relativa que empieza con "/", mantenerla
-  if (imagePath.startsWith('/')) {
-    console.log('🖼️ Ruta relativa mantenida:', imagePath);
-    return imagePath;
-  }
-  
-  // Cualquier otro caso, usar como ruta relativa
-  const localUrl = `/assets/${imagePath}`;
-  console.log('🖼️ Ruta default:', localUrl);
-  return localUrl;
+  console.log('🖼️ getImageUrl - usando placeholder para:', imagePath);
+  return '/placeholder.svg'; // ← SOLO placeholder, nada más
 };
 
 export const useApi = () => {
@@ -173,6 +146,7 @@ export const useApi = () => {
   const getRegionesZonasHabilitadas = (): RegionZona[] =>
     regionesZonas.filter(r => r.habilitar === 1).sort((a, b) => a.orden - b.orden);
 
+  
   return {
     configuracion,
     regionesZonas,
