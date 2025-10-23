@@ -1,7 +1,7 @@
-// Hero.tsx - VERSIÓN CORREGIDA COMPLETA
+// Hero.tsx - VERSIÓN CORREGIDA CON HOOK useApi
 import React, { useState, useEffect } from 'react';
 import { RegionZona } from '../../types/tourism';
-import { getImageUrl } from '../../hooks/useApi'; // ✅ Usar la función centralizada
+import { useApi } from '../../hooks/useApi'; // ✅ Importar el hook
 
 interface HeroProps {
   titulo: string;
@@ -16,14 +16,15 @@ const Hero: React.FC<HeroProps> = ({
   imagenFondo,
   regionZonaSeleccionada = null
 }) => {
+  const { getImageUrl } = useApi(); // ✅ Usar el hook
   const [isVisible, setIsVisible] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageInfo, setImageInfo] = useState({ width: 0, height: 0, ratio: 1 });
   
-  // ✅ Usar getImageUrl importada (NO la local)
+  // ✅ Usar getImageUrl del hook (SÍ tiene apiBaseUrl)
   const imagenParaMostrar = regionZonaSeleccionada?.imagen_region_zona_ruta_relativa 
-    ? getImageUrl(regionZonaSeleccionada.imagen_region_zona_ruta_relativa, '')
-    : getImageUrl(imagenFondo, '');
+    ? getImageUrl(regionZonaSeleccionada.imagen_region_zona_ruta_relativa)
+    : getImageUrl(imagenFondo);
 
   // ✅ Determinar títulos dinámicos
   const tituloParaMostrar = regionZonaSeleccionada 

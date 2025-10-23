@@ -1,7 +1,7 @@
-// Sidebar.tsx - VERSIÓN CORREGIDA COMPLETA
+// Sidebar.tsx - VERSIÓN CORREGIDA CON HOOK useApi
 import React, { useState, useEffect } from 'react';
 import { Seccion } from '../../types/tourism';
-import { getImageUrl } from '../../hooks/useApi'; // ✅ Usar la función centralizada
+import { useApi } from '../../hooks/useApi'; // ✅ Importar el hook
 
 interface SidebarProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   lugaresDestacadosCount,
   seccionActiva 
 }) => {
+  const { getImageUrl } = useApi(); // ✅ Usar el hook
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -96,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               {seccion.icono_seccion ? (
                 <img 
-                  src={getImageUrl(seccion.icono_seccion, '')} // ✅ Usar función centralizada
+                  src={getImageUrl(seccion.icono_seccion)} // ✅ Usar función del hook
                   alt={seccion.nombre_seccion}
                   className="w-6 h-6 object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
