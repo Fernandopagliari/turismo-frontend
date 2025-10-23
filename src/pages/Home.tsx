@@ -1,4 +1,4 @@
-// Home.tsx - VERSIÓN CORREGIDA (sin onRegionFilter)
+// Home.tsx - VERSIÓN ORIGINAL CORREGIDA
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Seccion, SubSeccion, RegionZona } from '../types/tourism';
@@ -40,25 +40,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   // ✅ NUEVO ESTADO: Imagen actual del Hero
   const [heroImagenActual, setHeroImagenActual] = useState<string>(heroImagen);
   const [heroTituloActual, setHeroTituloActual] = useState<string>(heroTitulo);
-
-  // ✅ DEBUG: Estado de la aplicación
-  const [debugMode, setDebugMode] = useState(true); // Cambiar a false para desactivar debug
-  const [appStatus, setAppStatus] = useState({
-    configLoaded: !!configuracion,
-    sectionsLoaded: seccionesHabilitadas.length > 0,
-    regionsLoaded: regionesZonasHabilitadas.length > 0,
-    apiConnected: !error
-  });
-
-  // Actualizar estado de debug
-  useEffect(() => {
-    setAppStatus({
-      configLoaded: !!configuracion,
-      sectionsLoaded: seccionesHabilitadas.length > 0,
-      regionsLoaded: regionesZonasHabilitadas.length > 0,
-      apiConnected: !error
-    });
-  }, [configuracion, seccionesHabilitadas, regionesZonasHabilitadas, error]);
 
   // Cambiar título dinámicamente
   useEffect(() => {
@@ -124,111 +105,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   const obtenerSeccionesFiltradas = () => getSeccionesPorRegionZona(regionZonaSeleccionada);
 
-  // ✅ DEBUG: Render de emergencia si hay problemas
-  if (debugMode && (!configuracion || error)) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
-        color: 'white',
-        padding: '40px',
-        fontFamily: 'Arial, sans-serif',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          background: 'rgba(255,255,255,0.95)',
-          color: '#333',
-          padding: '40px',
-          borderRadius: '20px',
-          maxWidth: '600px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
-        }}>
-          <h1 style={{ 
-            color: '#e74c3c', 
-            fontSize: '2.5rem',
-            marginBottom: '20px'
-          }}>
-            🚨 DEBUG MODE - Home.tsx
-          </h1>
-          
-          <div style={{
-            background: '#f8f9fa',
-            padding: '20px',
-            borderRadius: '10px',
-            marginBottom: '20px',
-            border: '2px solid #e74c3c'
-          }}>
-            <h2 style={{ color: '#2c3e50', marginBottom: '15px' }}>📊 Estado de la Aplicación</h2>
-            <div style={{ display: 'grid', gap: '10px', textAlign: 'left' }}>
-              <div><strong>Loading:</strong> {loading ? '⏳ SI' : '✅ NO'}</div>
-              <div><strong>Configuración:</strong> {configuracion ? '✅ CARGADA' : '❌ NULL'}</div>
-              <div><strong>Secciones:</strong> {seccionesHabilitadas.length}</div>
-              <div><strong>Regiones:</strong> {regionesZonasHabilitadas.length}</div>
-              <div><strong>Error:</strong> {error || 'NINGUNO'}</div>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{
-              background: '#ffeaa7',
-              color: '#d63031',
-              padding: '15px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              border: '1px solid #fab1a0'
-            }}>
-              <strong>❌ Error detectado:</strong> {error}
-            </div>
-          )}
-
-          <button 
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              background: '#3498db',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              margin: '10px'
-            }}
-          >
-            🔄 Recargar Página
-          </button>
-
-          <button 
-            onClick={() => setDebugMode(false)}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              background: '#2ecc71',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              margin: '10px'
-            }}
-          >
-            🚀 Intentar Cargar App Normal
-          </button>
-
-          <div style={{ marginTop: '20px', fontSize: '14px', color: '#7f8c8d' }}>
-            <p>Si ves este mensaje, hay problemas cargando los datos de la API.</p>
-            <p>Verifica la conexión y que todas las APIs estén funcionando.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Render normal de la aplicación
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500 text-center p-8">{error}</div>;
   if (!configuracion) return <LoadingSpinner />;
@@ -283,29 +159,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
-      {/* ✅ DEBUG BANNER (solo en desarrollo) */}
-      {debugMode && process.env.NODE_ENV === 'development' && (
-        <div style={{
-          background: 'linear-gradient(90deg, #667eea, #764ba2)',
-          color: 'white',
-          padding: '8px',
-          textAlign: 'center',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10000
-        }}>
-          🔧 DEBUG MODE ACTIVADO | 
-          Config: {appStatus.configLoaded ? '✅' : '❌'} | 
-          Sections: {appStatus.sectionsLoaded ? '✅' : '❌'} | 
-          Regions: {appStatus.regionsLoaded ? '✅' : '❌'} |
-          API: {appStatus.apiConnected ? '✅' : '❌'}
-        </div>
-      )}
-
       <Header 
         tituloApp={configuracion.titulo_app}
         logoApp={getImageUrl(configuracion.logo_app_ruta_relativa)}
