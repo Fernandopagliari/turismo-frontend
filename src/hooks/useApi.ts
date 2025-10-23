@@ -1,4 +1,4 @@
-// useApi.tsx - VERSIÓN COMPLETA CON EXPORTACIÓN
+// useApi.tsx - VERSIÓN CORREGIDA SIN DUPLICACIÓN
 import { useState, useEffect } from 'react';
 import { Configuracion, Seccion, SubSeccion, RegionZona, FrontendConfig } from '../types/tourism';
 
@@ -12,7 +12,8 @@ export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string 
   
   if (apiBaseUrl) {
     const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    const fullUrl = `${apiBaseUrl}/assets/${cleanImagePath}`;
+    // ✅ CORRECCIÓN: Quitar /assets/ extra - ahora las imágenes están en la raíz del backend
+    const fullUrl = `${apiBaseUrl}/${cleanImagePath}`;
     console.log('🖼️ URL completa backend:', fullUrl);
     return fullUrl;
   }
