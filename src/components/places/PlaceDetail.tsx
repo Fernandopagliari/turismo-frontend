@@ -1,16 +1,17 @@
-// PlaceDetail.tsx - VERSIÓN CORREGIDA
+// PlaceDetail.tsx - VERSIÓN CORREGIDA (SIN onRegionFilter)
 import React, { useState } from 'react';
 import { SubSeccion } from '../../types/tourism';
-import { useApi } from '../../hooks/useApi'; // ✅ Usar hook
+import { useApi } from '../../hooks/useApi';
 
+// ✅ INTERFACE CORREGIDA - SIN onRegionFilter
 interface PlaceDetailProps {
   lugar: SubSeccion | null;
   onClose: () => void;
-  onRegionFilter: (regionId: number) => void;
+  // ❌ ELIMINADO: onRegionFilter: (regionId: number) => void;
 }
 
-const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose, onRegionFilter }) => {
-  const { getImageUrl } = useApi(); // ✅ Usar del hook
+const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose }) => { // ✅ Quitado onRegionFilter de aquí también
+  const { getImageUrl } = useApi();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   if (!lugar) return null;
@@ -40,20 +41,12 @@ const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose, onRegionFilte
             </button>
           </div>
           
-          <div className="flex items-center space-x-4 mt-2">
-            <button
-              onClick={() => onRegionFilter(lugar.id_region_zona)}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              📍 Ver más en esta región
-            </button>
-            
-            {lugar.destacado === 1 && (
-              <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-                ⭐ Destacado
-              </span>
-            )}
-          </div>
+          {/* ✅ ELIMINADO el botón "Ver más en esta región" */}
+          {lugar.destacado === 1 && (
+            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+              ⭐ Destacado
+            </span>
+          )}
         </div>
 
         {/* Galería de imágenes */}
@@ -61,7 +54,7 @@ const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose, onRegionFilte
           <div className="p-6 border-b border-gray-200">
             <div className="relative h-80 bg-gray-100 rounded-lg overflow-hidden">
               <img 
-                src={getImageUrl(imagenes[activeImageIndex])} // ✅ Corregido
+                src={getImageUrl(imagenes[activeImageIndex])}
                 alt={lugar.nombre_sub_seccion}
                 className="w-full h-full object-cover"
               />
@@ -78,7 +71,7 @@ const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose, onRegionFilte
                     }`}
                   >
                     <img 
-                      src={getImageUrl(img)} // ✅ Corregido
+                      src={getImageUrl(img)}
                       alt={`${lugar.nombre_sub_seccion} ${index + 1}`}
                       className="w-full h-full object-cover rounded"
                     />
