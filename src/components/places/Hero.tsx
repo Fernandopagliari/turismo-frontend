@@ -1,22 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+// Hero.tsx - VERSIÓN CORREGIDA COMPLETA
+import React, { useState, useEffect } from 'react';
 import { RegionZona } from '../../types/tourism';
-
-// 🔧 Función para manejar rutas de imagen locales/remotas
-const getImageUrl = (rutaRelativa: string) => {
-  if (!rutaRelativa) return '';
-
-  if (rutaRelativa.startsWith('http')) {
-    return rutaRelativa;
-  }
-
-  const baseUrl = window.location.origin;
-
-  if (rutaRelativa.startsWith('assets/') || rutaRelativa.startsWith('/assets/')) {
-    return `${baseUrl}/static-assets/${rutaRelativa.replace(/^\/?assets\//, '')}`;
-  }
-
-  return `${baseUrl}/static-assets/${rutaRelativa}`;
-};
+import { getImageUrl } from '../../hooks/useApi'; // ✅ Usar la función centralizada
 
 interface HeroProps {
   titulo: string;
@@ -35,10 +20,10 @@ const Hero: React.FC<HeroProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageInfo, setImageInfo] = useState({ width: 0, height: 0, ratio: 1 });
   
-  // ✅ Determinar qué imagen usar
+  // ✅ Usar getImageUrl importada (NO la local)
   const imagenParaMostrar = regionZonaSeleccionada?.imagen_region_zona_ruta_relativa 
-    ? getImageUrl(regionZonaSeleccionada.imagen_region_zona_ruta_relativa)
-    : getImageUrl(imagenFondo);
+    ? getImageUrl(regionZonaSeleccionada.imagen_region_zona_ruta_relativa, '')
+    : getImageUrl(imagenFondo, '');
 
   // ✅ Determinar títulos dinámicos
   const tituloParaMostrar = regionZonaSeleccionada 

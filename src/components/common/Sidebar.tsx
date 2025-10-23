@@ -1,22 +1,7 @@
+// Sidebar.tsx - VERSIÓN CORREGIDA COMPLETA
 import React, { useState, useEffect } from 'react';
 import { Seccion } from '../../types/tourism';
-
-// ✅ Función para manejar rutas locales y remotas
-const getImageUrl = (rutaRelativa: string) => {
-  if (!rutaRelativa) return '';
-  
-  if (rutaRelativa.startsWith('http')) {
-    return rutaRelativa;
-  }
-  
-  const baseUrl = window.location.origin;
-
-  if (rutaRelativa.startsWith('assets/') || rutaRelativa.startsWith('/assets/')) {
-    return `${baseUrl}/static-assets/${rutaRelativa.replace(/^\/?assets\//, '')}`;
-  }
-
-  return `${baseUrl}/static-assets/${rutaRelativa}`;
-};
+import { getImageUrl } from '../../hooks/useApi'; // ✅ Usar la función centralizada
 
 interface SidebarProps {
   isOpen: boolean;
@@ -111,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               {seccion.icono_seccion ? (
                 <img 
-                  src={getImageUrl(seccion.icono_seccion)}
+                  src={getImageUrl(seccion.icono_seccion, '')} // ✅ Usar función centralizada
                   alt={seccion.nombre_seccion}
                   className="w-6 h-6 object-contain"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}

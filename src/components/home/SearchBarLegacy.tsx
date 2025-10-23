@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SubSeccion } from '../../types/tourism';
-import { useApi } from '../../../hooks/useApi'; // ✅ AGREGAR import
+import { useApi } from '../../hooks/useApi'; // ✅ AGREGAR import
 
 interface SearchBarProps {
   onSearch: (resultados: SubSeccion[]) => void;
