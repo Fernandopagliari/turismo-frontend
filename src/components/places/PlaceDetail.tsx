@@ -1,4 +1,4 @@
-// PlaceDetail.tsx - VERSIÓN CORREGIDA (SIN onRegionFilter)
+// PlaceDetail.tsx - VERSIÓN CORREGIDA (SOLO SE QUITÓ onRegionFilter)
 import React, { useState } from 'react';
 import { SubSeccion } from '../../types/tourism';
 import { useApi } from '../../hooks/useApi';
@@ -7,10 +7,10 @@ import { useApi } from '../../hooks/useApi';
 interface PlaceDetailProps {
   lugar: SubSeccion | null;
   onClose: () => void;
-  // ❌ ELIMINADO: onRegionFilter: (regionId: number) => void;
 }
 
-const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose }) => { // ✅ Quitado onRegionFilter de aquí también
+// ✅ COMPONENTE CORREGIDO - SIN onRegionFilter en parámetros
+const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose }) => {
   const { getImageUrl } = useApi();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -41,12 +41,23 @@ const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose }) => { // ✅
             </button>
           </div>
           
-          {/* ✅ ELIMINADO el botón "Ver más en esta región" */}
-          {lugar.destacado === 1 && (
-            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-              ⭐ Destacado
-            </span>
-          )}
+          <div className="flex items-center space-x-4 mt-2">
+            {/* ✅ COMENTADO TEMPORALMENTE - Botón de región */}
+            {/*
+            <button
+              onClick={() => onRegionFilter(lugar.id_region_zona)}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              📍 Ver más en esta región
+            </button>
+            */}
+            
+            {lugar.destacado === 1 && (
+              <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                ⭐ Destacado
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Galería de imágenes */}
