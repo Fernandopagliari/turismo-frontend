@@ -58,7 +58,7 @@ const Footer: React.FC<FooterProps> = ({ configuracion }) => {
         {/* Línea inferior */}
         <div className="border-t border-gray-700 mt-8 pt-4 text-center">
           <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} {configuracion.titulo_app}. Todos los derechos reservados.
+            © {new Date().getFullYear()} {configuracion.titulo_app}. Todos los derechos reservados.           Creado por: Fernando Ariel Pagliari.
           </p>
         </div>
       </div>

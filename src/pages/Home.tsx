@@ -1,16 +1,14 @@
-// Home.tsx - VERSIÓN ORIGINAL CORREGIDA
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Seccion, SubSeccion, RegionZona } from '../types/tourism';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import Sidebar from '../components/common/Sidebar';
-import Hero from '../components/places/Hero';
-import PlacesGrid from '../components/places/PlacesGrid'; 
+import Hero from '../components/home/Hero';
+import PlacesGrid from '../components/home/PlacesGrid';
 import { SearchBar } from '../components/places/SearchBar';
 import PlaceDetail from '../components/places/PlaceDetail';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { getImageUrl } from '../hooks/useApi';
 
 interface HomeProps {
   heroTitulo: string;
@@ -20,13 +18,14 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   const { 
     configuracion, 
-    seccionesHabilitadas,
+    seccionesHabilitadas, 
     lugaresDestacados, 
     regionesZonasHabilitadas,
     getSeccionesPorRegionZona,
-    buscarLugares,
+    getSubSeccionesPorRegionZona,
     loading, 
-    error
+    error, 
+    buscarLugares 
   } = useApi();
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,85 +34,66 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   const [resultadosBusqueda, setResultadosBusqueda] = useState<SubSeccion[] | null>(null);
   const [mostrarDestacados, setMostrarDestacados] = useState(false);
   const [seccionActiva, setSeccionActiva] = useState<string | null>(null);
-  const [regionZonaSeleccionada, setRegionZonaSeleccionada] = useState<number | null>(null);
-  
-  // ✅ NUEVO ESTADO: Imagen actual del Hero
-  const [heroImagenActual, setHeroImagenActual] = useState<string>(heroImagen);
-  const [heroTituloActual, setHeroTituloActual] = useState<string>(heroTitulo);
+  const [regionZonaSeleccionada, setRegionZonaSeleccionada] = useState<number | null>(null); // NUEVO
 
-  // Cambiar título dinámicamente
+  // Cambiar el título de la página dinámicamente
   useEffect(() => {
-    if (configuracion?.titulo_app) document.title = configuracion.titulo_app;
+    if (configuracion && configuracion.titulo_app) {
+      document.title = configuracion.titulo_app;
+    }
   }, [configuracion]);
 
-  // ✅ NUEVO EFFECT: Actualizar imagen del Hero cuando cambia la región
-  useEffect(() => {
-    if (regionZonaSeleccionada) {
-      const region = regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada);
-      if (region) {
-        // Usar la imagen de la región si existe, sino mantener la hero_imagen
-        const nuevaImagen = region.imagen_region_zona_ruta_relativa || heroImagen;
-        const nuevoTitulo = region.nombre_region_zona || heroTitulo;
-        
-        setHeroImagenActual(nuevaImagen);
-        setHeroTituloActual(nuevoTitulo);
-      }
-    } else {
-      // Reset a la imagen/título original cuando no hay región seleccionada
-      setHeroImagenActual(heroImagen);
-      setHeroTituloActual(heroTitulo);
-    }
-  }, [regionZonaSeleccionada, regionesZonasHabilitadas, heroImagen, heroTitulo]);
-
-  // Reset al cargar
+  // Resetear al cargar la página
   useEffect(() => {
     setSeccionActiva(null);
     setSeccionSeleccionada(null);
     setMostrarDestacados(false);
     setResultadosBusqueda(null);
-    setRegionZonaSeleccionada(null);
-    // ✅ Reset también la imagen del Hero
-    setHeroImagenActual(heroImagen);
-    setHeroTituloActual(heroTitulo);
+    setRegionZonaSeleccionada(null); // NUEVO
   }, []);
 
-  // Manejar cambio de región/zona
+  // NUEVA FUNCIÓN: Manejar cambio de región/zona
   const handleRegionZonaChange = (regionZonaId: number | null) => {
     setRegionZonaSeleccionada(regionZonaId);
     setResultadosBusqueda(null);
     setSeccionSeleccionada(null);
     setMostrarDestacados(false);
     setSeccionActiva(null);
-    
-    // ✅ La imagen se actualiza automáticamente por el useEffect
   };
 
-  // Obtener lugares filtrados según estado actual
+  // NUEVA FUNCIÓN: Obtener lugares según la región/zona seleccionada
   const obtenerLugaresFiltrados = () => {
     if (resultadosBusqueda) {
-      return resultadosBusqueda.filter(lugar => !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada);
-    } 
-    if (mostrarDestacados) {
-      return lugaresDestacados.filter(lugar => !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada);
-    } 
-    if (seccionSeleccionada) {
-      return seccionSeleccionada.subsecciones.filter(lugar => !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada);
+      // Si hay resultados de búsqueda, filtrarlos por región/zona
+      return resultadosBusqueda.filter(lugar => 
+        !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada
+      );
+    } else if (mostrarDestacados) {
+      // Si estamos en destacados, usar la función del hook con filtro
+      return lugaresDestacados.filter(lugar => 
+        !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada
+      );
+    } else if (seccionSeleccionada) {
+      // Si hay una sección seleccionada, filtrar sus subsecciones
+      return seccionSeleccionada.subsecciones.filter(lugar => 
+        !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada
+      );
+    } else {
+      // Estado inicial: mostrar todas las secciones filtradas por región/zona
+      return getSeccionesPorRegionZona(regionZonaSeleccionada)
+        .flatMap(seccion => seccion.subsecciones);
     }
-    // Todas las secciones filtradas por región/zona
-    return getSeccionesPorRegionZona(regionZonaSeleccionada).flatMap(seccion => seccion.subsecciones);
   };
 
-  const obtenerSeccionesFiltradas = () => getSeccionesPorRegionZona(regionZonaSeleccionada);
+  // NUEVA FUNCIÓN: Obtener secciones filtradas por región/zona
+  const obtenerSeccionesFiltradas = () => {
+    return getSeccionesPorRegionZona(regionZonaSeleccionada);
+  };
 
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500 text-center p-8">{error}</div>;
   if (!configuracion) return <LoadingSpinner />;
 
-  const lugaresFiltrados = obtenerLugaresFiltrados();
-  const seccionesFiltradas = obtenerSeccionesFiltradas();
-  const mostrarTodo = !seccionSeleccionada && !mostrarDestacados && !resultadosBusqueda;
-
-  // Funciones de búsqueda
   const handleSearch = (termino: string) => {
     const resultados = buscarLugares(termino);
     setResultadosBusqueda(resultados);
@@ -123,22 +103,19 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     setIsMenuOpen(false);
   };
 
-  const handleClearSearch = () => setResultadosBusqueda(null);
+  const handleClearSearch = () => {
+    setResultadosBusqueda(null);
+  };
 
-  // Click en Home / Reset filtros
   const handleHomeClick = () => {
     setSeccionSeleccionada(null);
     setMostrarDestacados(false);
     setSeccionActiva(null);
     setResultadosBusqueda(null);
     setIsMenuOpen(false);
-    setRegionZonaSeleccionada(null);
-    // ✅ Reset también la imagen del Hero
-    setHeroImagenActual(heroImagen);
-    setHeroTituloActual(heroTitulo);
+    setRegionZonaSeleccionada(null); // NUEVO: resetear región al hacer home
   };
 
-  // Click en sección
   const handleSeccionClick = (seccion: Seccion) => {
     setSeccionSeleccionada(seccion);
     setMostrarDestacados(false);
@@ -146,7 +123,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     setIsMenuOpen(false);
   };
 
-  // Click en destacados
   const handleDestacadosClick = () => {
     setMostrarDestacados(true);
     setSeccionSeleccionada(null);
@@ -154,21 +130,28 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     setIsMenuOpen(false);
   };
 
-  // Toggle menú
-  const handleMenuToggle = () => setIsMenuOpen(!isMenuOpen);
+  const handleMenuToggle = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const seccionesFiltradas = obtenerSeccionesFiltradas();
+  const lugaresFiltrados = obtenerLugaresFiltrados();
+  const mostrarTodo = !seccionSeleccionada && !mostrarDestacados && !resultadosBusqueda;
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
+      {/* Header con selector de región/zona */}
       <Header 
         tituloApp={configuracion.titulo_app}
-        logoApp={getImageUrl(configuracion.logo_app_ruta_relativa)}
+        logoApp={configuracion.logo_app_ruta_relativa}
         onMenuToggle={handleMenuToggle}
         isMenuOpen={isMenuOpen}
-        regionesZonas={regionesZonasHabilitadas}
-        regionZonaSeleccionada={regionZonaSeleccionada}
-        onRegionZonaChange={handleRegionZonaChange}
+        regionesZonas={regionesZonasHabilitadas} // NUEVO
+        regionZonaSeleccionada={regionZonaSeleccionada} // NUEVO
+        onRegionZonaChange={handleRegionZonaChange} // NUEVO
       />
 
+      {/* Sidebar */}
       <Sidebar 
         isOpen={isMenuOpen}
         secciones={seccionesHabilitadas}
@@ -179,13 +162,14 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
         seccionActiva={seccionActiva}
       />
 
+      {/* Contenido principal */}
       <main className={`flex-grow transition-all duration-300 ${isMenuOpen ? 'lg:ml-20' : ''}`}>  
-        {/* HERO DINÁMICO */}
-        <section id="inicio">
+        {/* Hero Section */}
+        <section id="inicio" key={regionZonaSeleccionada || 'default'}>
           <Hero 
-            titulo={heroTituloActual} // ✅ Usar título dinámico
+            titulo={heroTitulo} 
             subtitulo={configuracion.footer_texto}
-            imagenFondo={getImageUrl(heroImagenActual)} // ✅ Usar imagen dinámica
+            imagenFondo={heroImagen}
             regionZonaSeleccionada={
               regionZonaSeleccionada 
                 ? regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada) 
@@ -196,14 +180,13 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
         {/* Barra de búsqueda */}
         <section className="container mx-auto px-4 py-8">
-          <SearchBar
+          <SearchBar 
             onSearch={handleSearch}
             onClear={handleClearSearch}
-            placeholder="Buscar lugares turísticos..."
           />
         </section>
 
-        {/* Filtros activos */}
+        {/* Indicador de sección activa y región/zona */}
         {(seccionActiva || regionZonaSeleccionada) && (
           <div className="container mx-auto px-4 mb-4">
             <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
@@ -219,14 +202,14 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
                   </span>
                 )}
                 <button 
-                  onClick={handleHomeClick} 
+                  onClick={handleHomeClick}
                   className="ml-4 text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition-colors"
                 >
                   Ver todo
                 </button>
                 {regionZonaSeleccionada && (
                   <button 
-                    onClick={() => setRegionZonaSeleccionada(null)} 
+                    onClick={() => setRegionZonaSeleccionada(null)}
                     className="ml-2 text-xs bg-red-700 hover:bg-red-600 px-2 py-1 rounded transition-colors"
                   >
                     Quitar filtro región
@@ -237,58 +220,65 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
           </div>
         )}
 
-        {/* Resultados / Secciones / Destacados */}
+        {/* Resultados de búsqueda */}
         {resultadosBusqueda ? (
           <PlacesGrid 
-            lugares={lugaresFiltrados} 
-            titulo={`Resultados de búsqueda (${lugaresFiltrados.length})`} 
-            onPlaceClick={setLugarSeleccionado} 
+            lugares={lugaresFiltrados}
+            titulo={`Resultados de búsqueda (${lugaresFiltrados.length})`}
+            onPlaceClick={setLugarSeleccionado}
           />
         ) : (
           <>
+            {/* Sección DESTACADOS */}
             {mostrarDestacados && lugaresFiltrados.length > 0 && (
               <section id="destacados" className="mb-12">
                 <PlacesGrid 
-                  lugares={lugaresFiltrados} 
-                  titulo="⭐ Lugares Destacados" 
-                  onPlaceClick={setLugarSeleccionado} 
-                  mostrarCategoria 
+                  lugares={lugaresFiltrados}
+                  titulo="⭐ Lugares Destacados"
+                  onPlaceClick={setLugarSeleccionado}
+                  mostrarCategoria={true}
                 />
               </section>
             )}
 
+            {/* Sección específica seleccionada */}
             {seccionSeleccionada && lugaresFiltrados.length > 0 && (
               <section key={seccionSeleccionada.id_seccion} className="mb-12">
                 <PlacesGrid 
-                  lugares={lugaresFiltrados} 
-                  titulo={seccionSeleccionada.nombre_seccion} 
-                  onPlaceClick={setLugarSeleccionado} 
+                  lugares={lugaresFiltrados}
+                  titulo={seccionSeleccionada.nombre_seccion}
+                  onPlaceClick={setLugarSeleccionado}
+                  mostrarCategoria={false}
                 />
               </section>
             )}
 
-            {mostrarTodo && seccionesFiltradas.map(seccion => (
+            {/* Mostrar TODAS las secciones (solo en estado inicial) */}
+            {mostrarTodo && seccionesFiltradas.map((seccion) => (
               seccion.subsecciones.length > 0 && (
                 <section key={seccion.id_seccion} className="mb-12">
                   <PlacesGrid 
-                    lugares={seccion.subsecciones} 
-                    titulo={seccion.nombre_seccion} 
-                    onPlaceClick={setLugarSeleccionado} 
+                    lugares={seccion.subsecciones}
+                    titulo={seccion.nombre_seccion}
+                    onPlaceClick={setLugarSeleccionado}
+                    mostrarCategoria={false}
                   />
                 </section>
               )
             ))}
 
+            {/* Mensaje cuando no hay resultados */}
             {lugaresFiltrados.length === 0 && (
               <div className="container mx-auto px-4 py-12 text-center">
                 <div className="bg-gray-800 rounded-lg p-8 border border-gray-700">
                   <p className="text-gray-400 text-lg">
                     {regionZonaSeleccionada 
-                      ? 'No se encontraron lugares en la región seleccionada' 
-                      : 'No se encontraron lugares'}
+                      ? `No se encontraron lugares en la región seleccionada`
+                      : 'No se encontraron lugares'
+                    }
                   </p>
                   <button 
-                    onClick={handleHomeClick} 
+                    onClick={handleHomeClick}
                     className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                   >
                     Ver todos los lugares
@@ -302,10 +292,10 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
       <Footer configuracion={configuracion} />
 
-      {/* ✅ CORREGIDO: PlaceDetail sin onRegionFilter */}
+      {/* Modal de detalle del lugar */}
       {lugarSeleccionado && (
         <PlaceDetail 
-          lugar={lugarSeleccionado} 
+          lugar={lugarSeleccionado}
           onClose={() => setLugarSeleccionado(null)}
         />
       )}
