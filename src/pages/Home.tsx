@@ -1,4 +1,4 @@
-// Home.tsx - VERSIÓN ORIGINAL CORREGIDA
+// Home.tsx - VERSIÓN OPTIMIZADA SIN FILTROS REDUNDANTES
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Seccion, SubSeccion, RegionZona } from '../types/tourism';
@@ -37,7 +37,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   const [seccionActiva, setSeccionActiva] = useState<string | null>(null);
   const [regionZonaSeleccionada, setRegionZonaSeleccionada] = useState<number | null>(null);
   
-  // ✅ NUEVO ESTADO: Imagen actual del Hero
+  // Estado: Imagen actual del Hero
   const [heroImagenActual, setHeroImagenActual] = useState<string>(heroImagen);
   const [heroTituloActual, setHeroTituloActual] = useState<string>(heroTitulo);
 
@@ -46,12 +46,11 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     if (configuracion?.titulo_app) document.title = configuracion.titulo_app;
   }, [configuracion]);
 
-  // ✅ NUEVO EFFECT: Actualizar imagen del Hero cuando cambia la región
+  // EFFECT: Actualizar imagen del Hero cuando cambia la región
   useEffect(() => {
     if (regionZonaSeleccionada) {
       const region = regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada);
       if (region) {
-        // Usar la imagen de la región si existe, sino mantener la hero_imagen
         const nuevaImagen = region.imagen_region_zona_ruta_relativa || heroImagen;
         const nuevoTitulo = region.nombre_region_zona || heroTitulo;
         
@@ -59,7 +58,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
         setHeroTituloActual(nuevoTitulo);
       }
     } else {
-      // Reset a la imagen/título original cuando no hay región seleccionada
       setHeroImagenActual(heroImagen);
       setHeroTituloActual(heroTitulo);
     }
@@ -72,7 +70,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     setMostrarDestacados(false);
     setResultadosBusqueda(null);
     setRegionZonaSeleccionada(null);
-    // ✅ Reset también la imagen del Hero
     setHeroImagenActual(heroImagen);
     setHeroTituloActual(heroTitulo);
   }, []);
@@ -84,25 +81,35 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     setSeccionSeleccionada(null);
     setMostrarDestacados(false);
     setSeccionActiva(null);
-    
-    // ✅ La imagen se actualiza automáticamente por el useEffect
   };
 
-  // Obtener lugares filtrados según estado actual
+  // ✅ FUNCIÓN OPTIMIZADA: Confía en el hook useApi para el filtrado
   const obtenerLugaresFiltrados = () => {
     if (resultadosBusqueda) {
-      return resultadosBusqueda.filter(lugar => !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada);
+      // useApi ya devuelve solo resultados habilitados
+      return regionZonaSeleccionada 
+        ? resultadosBusqueda.filter(lugar => lugar.id_region_zona === regionZonaSeleccionada)
+        : resultadosBusqueda;
     } 
     if (mostrarDestacados) {
-      return lugaresDestacados.filter(lugar => !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada);
+      // useApi ya devuelve solo lugares destacados habilitados
+      return regionZonaSeleccionada 
+        ? lugaresDestacados.filter(lugar => lugar.id_region_zona === regionZonaSeleccionada)
+        : lugaresDestacados;
     } 
     if (seccionSeleccionada) {
-      return seccionSeleccionada.subsecciones.filter(lugar => !regionZonaSeleccionada || lugar.id_region_zona === regionZonaSeleccionada);
+      // useApi ya devuelve secciones con subsecciones habilitadas
+      return regionZonaSeleccionada 
+        ? seccionSeleccionada.subsecciones.filter(lugar => lugar.id_region_zona === regionZonaSeleccionada)
+        : seccionSeleccionada.subsecciones;
     }
-    // Todas las secciones filtradas por región/zona
-    return getSeccionesPorRegionZona(regionZonaSeleccionada).flatMap(seccion => seccion.subsecciones);
+    
+    // useApi ya devuelve solo secciones y subsecciones habilitadas
+    return getSeccionesPorRegionZona(regionZonaSeleccionada)
+      .flatMap(seccion => seccion.subsecciones);
   };
 
+  // ✅ OPTIMIZADO: useApi ya filtra por región y habilitar
   const obtenerSeccionesFiltradas = () => getSeccionesPorRegionZona(regionZonaSeleccionada);
 
   if (loading) return <LoadingSpinner />;
@@ -115,6 +122,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   // Funciones de búsqueda
   const handleSearch = (termino: string) => {
+    // useApi.buscarLugares ya filtra por habilitar === 1
     const resultados = buscarLugares(termino);
     setResultadosBusqueda(resultados);
     setMostrarDestacados(false);
@@ -133,13 +141,13 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     setResultadosBusqueda(null);
     setIsMenuOpen(false);
     setRegionZonaSeleccionada(null);
-    // ✅ Reset también la imagen del Hero
     setHeroImagenActual(heroImagen);
     setHeroTituloActual(heroTitulo);
   };
 
   // Click en sección
   const handleSeccionClick = (seccion: Seccion) => {
+    // useApi.seccionesHabilitadas ya filtra por habilitar === 1
     setSeccionSeleccionada(seccion);
     setMostrarDestacados(false);
     setSeccionActiva(seccion.nombre_seccion);
@@ -148,6 +156,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   // Click en destacados
   const handleDestacadosClick = () => {
+    // useApi.lugaresDestacados ya filtra por habilitar === 1 y destacado === 1
     setMostrarDestacados(true);
     setSeccionSeleccionada(null);
     setSeccionActiva('destacados');
@@ -164,18 +173,18 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
         logoApp={getImageUrl(configuracion.logo_app_ruta_relativa)}
         onMenuToggle={handleMenuToggle}
         isMenuOpen={isMenuOpen}
-        regionesZonas={regionesZonasHabilitadas}
+        regionesZonas={regionesZonasHabilitadas} // ✅ Ya filtradas por habilitar
         regionZonaSeleccionada={regionZonaSeleccionada}
         onRegionZonaChange={handleRegionZonaChange}
       />
 
       <Sidebar 
         isOpen={isMenuOpen}
-        secciones={seccionesHabilitadas}
+        secciones={seccionesHabilitadas} // ✅ Ya filtradas por habilitar
         onSeccionClick={handleSeccionClick}
         onDestacadosClick={handleDestacadosClick}
         onHomeClick={handleHomeClick}
-        lugaresDestacadosCount={lugaresDestacados.length}
+        lugaresDestacadosCount={lugaresDestacados.length} // ✅ Ya filtrados
         seccionActiva={seccionActiva}
       />
 
@@ -183,9 +192,9 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
         {/* HERO DINÁMICO */}
         <section id="inicio">
           <Hero 
-            titulo={heroTituloActual} // ✅ Usar título dinámico
+            titulo={heroTituloActual}
             subtitulo={configuracion.footer_texto}
-            imagenFondo={getImageUrl(heroImagenActual)} // ✅ Usar imagen dinámica
+            imagenFondo={getImageUrl(heroImagenActual)}
             regionZonaSeleccionada={
               regionZonaSeleccionada 
                 ? regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada) 
@@ -268,10 +277,10 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
             )}
 
             {mostrarTodo && seccionesFiltradas.map(seccion => (
-              seccion.subsecciones.length > 0 && (
+              seccion.subsecciones.length > 0 && ( // ✅ useApi ya filtra subsecciones habilitadas
                 <section key={seccion.id_seccion} className="mb-12">
                   <PlacesGrid 
-                    lugares={seccion.subsecciones} 
+                    lugares={seccion.subsecciones} // ✅ Ya vienen habilitadas del hook
                     titulo={seccion.nombre_seccion} 
                     onPlaceClick={setLugarSeleccionado} 
                   />
@@ -302,7 +311,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
       <Footer configuracion={configuracion} />
 
-      {/* ✅ CORREGIDO: PlaceDetail sin onRegionFilter */}
+      {/* PlaceDetail */}
       {lugarSeleccionado && (
         <PlaceDetail 
           lugar={lugarSeleccionado} 
