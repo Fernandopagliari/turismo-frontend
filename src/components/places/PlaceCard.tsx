@@ -1,5 +1,6 @@
 import React from 'react';
 import { SubSeccion } from '../../types/tourism';
+import { useImageCache } from '../../hooks/useImageCache'; // ✅ Importar el hook de cache
 
 interface PlaceCardProps {
   lugar: SubSeccion;
@@ -8,6 +9,9 @@ interface PlaceCardProps {
 }
 
 const PlaceCard: React.FC<PlaceCardProps> = ({ lugar, onClick, mostrarCategoria = true }) => {
+  // ✅ USAR CACHE PARA LA IMAGEN
+  const { cachedUrl, loading: imageLoading } = useImageCache(lugar.imagen_ruta_relativa);
+
   // Función para formatear teléfono (igual que en PlaceDetail)
   const formatearTelefono = (telefono: string): string => {
     return telefono.replace(/[\s\-\(\)]/g, '');
@@ -30,16 +34,24 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ lugar, onClick, mostrarCategoria 
       className="bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300 fade-in border border-gray-700"
       onClick={() => onClick(lugar)}
     >
-      {/* Imagen principal */}
+      {/* Imagen principal CON CACHE */}
       <div className="h-48 overflow-hidden">
         <img 
-          src={lugar.imagen_ruta_relativa || '/placeholder.jpg'} 
+          src={cachedUrl || '/placeholder.jpg'} // ✅ Usar URL en cache
           alt={lugar.nombre_sub_seccion}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          className={`w-full h-full object-cover hover:scale-105 transition-transform duration-300 ${
+            imageLoading ? 'opacity-50' : 'opacity-100' // ✅ Feedback de carga
+          }`}
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/placeholder.jpg';
           }}
         />
+        {/* ✅ Mostrar indicador de carga */}
+        {imageLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-700 bg-opacity-50">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          </div>
+        )}
       </div>
       
       <div className="p-4">

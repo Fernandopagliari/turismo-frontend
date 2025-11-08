@@ -1,4 +1,4 @@
-// Home.tsx - VERSIÓN OPTIMIZADA SIN FILTROS REDUNDANTES
+// Home.tsx - VERSIÓN CORREGIDA
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Seccion, SubSeccion, RegionZona } from '../types/tourism';
@@ -11,6 +11,7 @@ import { SearchBar } from '../components/places/SearchBar';
 import PlaceDetail from '../components/places/PlaceDetail';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { getImageUrl } from '../hooks/useApi';
+import { useImageCache } from '../hooks/useImageCache'; // ✅ IMPORTAR HOOK DE CACHE
 
 interface HomeProps {
   heroTitulo: string;
@@ -40,6 +41,10 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   // Estado: Imagen actual del Hero
   const [heroImagenActual, setHeroImagenActual] = useState<string>(heroImagen);
   const [heroTituloActual, setHeroTituloActual] = useState<string>(heroTitulo);
+
+  // ✅ CACHE PARA IMÁGENES PRINCIPALES
+  const { cachedUrl: heroImageUrl } = useImageCache(heroImagenActual);
+  const { cachedUrl: logoUrl } = useImageCache(configuracion?.logo_app_ruta_relativa);
 
   // Cambiar título dinámicamente
   useEffect(() => {
@@ -170,7 +175,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     <div className="min-h-screen bg-gray-900 flex flex-col">
       <Header 
         tituloApp={configuracion.titulo_app}
-        logoApp={getImageUrl(configuracion.logo_app_ruta_relativa)}
+        logoApp={logoUrl || getImageUrl(configuracion.logo_app_ruta_relativa)} // ✅ USAR CACHE
         onMenuToggle={handleMenuToggle}
         isMenuOpen={isMenuOpen}
         regionesZonas={regionesZonasHabilitadas} // ✅ Ya filtradas por habilitar
@@ -194,7 +199,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
           <Hero 
             titulo={heroTituloActual}
             subtitulo={configuracion.footer_texto}
-            imagenFondo={getImageUrl(heroImagenActual)}
+            imagenFondo={heroImageUrl || getImageUrl(heroImagenActual)} // ✅ USAR CACHE
             regionZonaSeleccionada={
               regionZonaSeleccionada 
                 ? regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada) 

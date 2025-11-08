@@ -1,7 +1,8 @@
-// Hero.tsx - VERSIÓN CORREGIDA CON HOOK useApi
+// Hero.tsx - VERSIÓN CON CACHE
 import React, { useState, useEffect } from 'react';
 import { RegionZona } from '../../types/tourism';
 import { useApi } from '../../hooks/useApi'; // ✅ Importar el hook
+import { useImageCache } from '../../hooks/useImageCache'; // ✅ IMPORTAR HOOK DE CACHE
 
 interface HeroProps {
   titulo: string;
@@ -21,10 +22,16 @@ const Hero: React.FC<HeroProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageInfo, setImageInfo] = useState({ width: 0, height: 0, ratio: 1 });
   
-  // ✅ Usar getImageUrl del hook (SÍ tiene apiBaseUrl)
-  const imagenParaMostrar = regionZonaSeleccionada?.imagen_region_zona_ruta_relativa 
-    ? getImageUrl(regionZonaSeleccionada.imagen_region_zona_ruta_relativa)
-    : getImageUrl(imagenFondo);
+  // ✅ USAR CACHE PARA LA IMAGEN
+  const imagenRegion = regionZonaSeleccionada?.imagen_region_zona_ruta_relativa;
+  const { cachedUrl: imagenCacheada, loading: imageLoading } = useImageCache(
+    imagenRegion || imagenFondo
+  );
+
+  // ✅ Usar getImageUrl del hook (SÍ tiene apiBaseUrl) CON CACHE
+  const imagenParaMostrar = imagenCacheada || getImageUrl(
+    regionZonaSeleccionada?.imagen_region_zona_ruta_relativa || imagenFondo
+  );
 
   // ✅ Determinar títulos dinámicos
   const tituloParaMostrar = regionZonaSeleccionada 
@@ -120,12 +127,12 @@ const Hero: React.FC<HeroProps> = ({
           className={`relative rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center bg-gray-800 ${adaptiveStyles.container}`}
         >
           
-          {/* Imagen principal con estrategia adaptativa */}
+          {/* Imagen principal con estrategia adaptativa Y CACHE */}
           <img 
             src={imagenParaMostrar}
             alt={tituloParaMostrar}
             className={`w-full h-full transition-all duration-500 ${adaptiveStyles.image} ${
-              imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+              imageLoaded && !imageLoading ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
             }`}
             onLoad={handleImageLoad}
             style={{
@@ -144,7 +151,7 @@ const Hero: React.FC<HeroProps> = ({
                 className={`
                   text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 md:mb-6 drop-shadow-2xl
                   transition-all duration-1000 ease-out transform
-                  ${isVisible && imageLoaded
+                  ${isVisible && imageLoaded && !imageLoading
                     ? 'opacity-100 translate-y-0' 
                     : 'opacity-0 translate-y-6'
                   }
@@ -158,7 +165,7 @@ const Hero: React.FC<HeroProps> = ({
                 className={`
                   text-lg md:text-xl lg:text-2xl text-gray-200 mb-6 md:mb-8 drop-shadow-lg leading-relaxed
                   transition-all duration-1000 ease-out transform delay-300
-                  ${isVisible && imageLoaded
+                  ${isVisible && imageLoaded && !imageLoading
                     ? 'opacity-100 translate-y-0' 
                     : 'opacity-0 translate-y-6'
                   }
@@ -174,7 +181,7 @@ const Hero: React.FC<HeroProps> = ({
                     inline-flex items-center space-x-2 bg-black bg-opacity-75 backdrop-blur-sm 
                     rounded-full px-5 py-3 border border-white border-opacity-30 shadow-lg
                     transition-all duration-1000 ease-out transform delay-600
-                    ${isVisible && imageLoaded
+                    ${isVisible && imageLoaded && !imageLoading
                       ? 'opacity-100 translate-y-0' 
                       : 'opacity-0 translate-y-6'
                     }
@@ -189,12 +196,14 @@ const Hero: React.FC<HeroProps> = ({
             </div>
           </div>
 
-          {/* Loading sutil */}
-          {!imageLoaded && (
+          {/* Loading sutil - MEJORADO CON CACHE */}
+          {(imageLoading || !imageLoaded) && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center space-y-3">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white"></div>
-                <p className="text-white text-sm drop-shadow-md">Cargando...</p>
+                <p className="text-white text-sm drop-shadow-md">
+                  {imageLoading ? 'Cargando imagen...' : 'Procesando...'}
+                </p>
               </div>
             </div>
           )}

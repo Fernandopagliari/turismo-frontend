@@ -3,6 +3,7 @@ import { SubSeccion } from '../../types/tourism';
 import ImageGallery from './ImageGallery';
 import MapFallback from './MapFallback';
 import { useGeolocation } from '../../hooks/useGeolocation';
+import { useImageCache } from '../../hooks/useImageCache'; // ✅ Importar hook de cache
 
 interface PlaceDetailProps {
   lugar: SubSeccion;
@@ -48,13 +49,20 @@ const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose }) => {
     return /^\d{8,15}$/.test(numeroLimpio);
   };
 
-  // Recolectar todas las imágenes y videos disponibles
+  // ✅ USAR CACHE PARA LAS IMÁGENES PRINCIPALES
+  const { cachedUrl: imagenPrincipal } = useImageCache(lugar.imagen_ruta_relativa);
+  const { cachedUrl: foto1 } = useImageCache(lugar.foto1_ruta_relativa);
+  const { cachedUrl: foto2 } = useImageCache(lugar.foto2_ruta_relativa);
+  const { cachedUrl: foto3 } = useImageCache(lugar.foto3_ruta_relativa);
+  const { cachedUrl: foto4 } = useImageCache(lugar.foto4_ruta_relativa);
+
+  // Recolectar todas las imágenes y videos disponibles CON CACHE
   const todosLosMedios = [
-    lugar.imagen_ruta_relativa,
-    lugar.foto1_ruta_relativa,
-    lugar.foto2_ruta_relativa,
-    lugar.foto3_ruta_relativa,
-    lugar.foto4_ruta_relativa
+    imagenPrincipal || lugar.imagen_ruta_relativa, // ✅ Usar cache primero
+    foto1 || lugar.foto1_ruta_relativa,
+    foto2 || lugar.foto2_ruta_relativa,
+    foto3 || lugar.foto3_ruta_relativa,
+    foto4 || lugar.foto4_ruta_relativa
   ].filter(medio => medio && !medio.includes('null'));
 
   // Calcular distancia solo si las coordenadas son válidas
@@ -100,9 +108,12 @@ const PlaceDetail: React.FC<PlaceDetailProps> = ({ lugar, onClose }) => {
             
             {/* Columna izquierda - Galería e información */}
             <div className="space-y-4 lg:space-y-6">
-              {/* Galería de imágenes y videos */}
+              {/* Galería de imágenes y videos CON CACHE */}
               <div className="bg-gray-800 rounded-lg p-3 lg:p-4 border border-gray-700">
-                <ImageGallery imagenes={todosLosMedios} titulo={lugar.nombre_sub_seccion} />
+                <ImageGallery 
+                  imagenes={todosLosMedios} 
+                  titulo={lugar.nombre_sub_seccion} 
+                />
               </div>
 
               {/* Información del lugar */}
