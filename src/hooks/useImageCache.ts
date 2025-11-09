@@ -1,13 +1,13 @@
-// hooks/useImageCache.ts
+// hooks/useImageCache.ts - VERSIÓN CORREGIDA
 import { useState, useEffect, useRef } from 'react';
 import { getImageUrl } from './useApi';
 
 // Cache global en memoria
 const imageCache = new Map<string, { url: string; timestamp: number }>();
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos en milisegundos
-const MAX_CACHE_SIZE = 100; // Máximo de imágenes en cache
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos
+const MAX_CACHE_SIZE = 100;
 
-// Limpiar cache antiguo periódicamente
+// Limpiar cache antiguo
 const cleanupOldCache = () => {
   const now = Date.now();
   const keysToDelete: string[] = [];
@@ -20,7 +20,6 @@ const cleanupOldCache = () => {
   
   keysToDelete.forEach(key => imageCache.delete(key));
   
-  // Limitar tamaño del cache
   if (imageCache.size > MAX_CACHE_SIZE) {
     const entries = Array.from(imageCache.entries());
     const sorted = entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
@@ -73,7 +72,7 @@ export const useImageCache = (imagePath: string | null | undefined): UseImageCac
       return;
     }
 
-    // Preload image
+    // Preload image - CON TIMEOUT MÁS LARGO
     const loadImage = async () => {
       if (!mountedRef.current) return;
 
@@ -84,13 +83,25 @@ export const useImageCache = (imagePath: string | null | undefined): UseImageCac
           throw new Error('URL de imagen inválida');
         }
 
+        console.log(`🔄 Cache - Cargando imagen: ${imagePath} -> ${imageUrl}`);
+        
         const img = new Image();
         img.src = imageUrl;
         
         await new Promise((resolve, reject) => {
-          img.onload = () => resolve(true);
-          img.onerror = () => reject(new Error('Error cargando imagen'));
-          setTimeout(() => reject(new Error('Timeout cargando imagen')), 15000);
+          img.onload = () => {
+            console.log(`✅ Cache - Imagen cargada: ${imagePath}`);
+            resolve(true);
+          };
+          img.onerror = () => {
+            console.error(`❌ Cache - Error cargando imagen: ${imagePath}`);
+            reject(new Error('Error cargando imagen'));
+          };
+          // ✅ TIMEOUT INCREMENTADO A 30 SEGUNDOS
+          setTimeout(() => {
+            console.warn(`⏰ Cache - Timeout cargando imagen: ${imagePath}`);
+            reject(new Error('Timeout cargando imagen'));
+          }, 30000); // 30 segundos
         });
 
         if (mountedRef.current) {
@@ -107,7 +118,7 @@ export const useImageCache = (imagePath: string | null | undefined): UseImageCac
         }
       } catch (error) {
         if (mountedRef.current) {
-          console.warn(`Error cargando imagen: ${imagePath}`, error);
+          console.warn(`Cache - Error final para ${imagePath}:`, error);
           setState({ 
             cachedUrl: '', 
             loading: false, 

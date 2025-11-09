@@ -43,7 +43,7 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ lugar, onClick, mostrarCategoria 
             imageLoading ? 'opacity-50' : 'opacity-100' // ✅ Feedback de carga
           }`}
           onError={(e) => {
-            (e.target as HTMLImageElement).src = '/placeholder.jpg';
+            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PC9zdmc+';
           }}
         />
         {/* ✅ Mostrar indicador de carga */}
