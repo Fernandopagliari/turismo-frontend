@@ -1,4 +1,4 @@
-// Home.tsx - VERSIÓN COMPLETA CORREGIDA
+// Home.tsx - VERSIÓN CORREGIDA (PROPIEDAD loading EN LUGAR DE isLoading)
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Seccion, SubSeccion, RegionZona } from '../types/tourism';
@@ -42,22 +42,39 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   const [heroImagenActual, setHeroImagenActual] = useState<string>(heroImagen);
   const [heroTituloActual, setHeroTituloActual] = useState<string>(heroTitulo);
 
-  // ✅ CACHE PARA IMÁGENES PRINCIPALES
-  const { cachedUrl: heroImageUrl } = useImageCache(heroImagenActual);
-  const { cachedUrl: logoUrl } = useImageCache(configuracion?.logo_app_ruta_relativa);
+  // ✅ CACHE OPTIMIZADO: CORREGIDO - usar loading en lugar de isLoading
+  const { 
+    cachedUrl: heroImageUrl, 
+    loading: heroImageLoading, // ← CORREGIDO: loading en lugar de isLoading
+    error: heroImageError 
+  } = useImageCache(heroImagenActual, {
+    timeout: 30000,
+    retries: 2
+  });
 
-  // DEBUG: Verificar imágenes
+  const { 
+    cachedUrl: logoUrl,
+    loading: logoLoading 
+  } = useImageCache(configuracion?.logo_app_ruta_relativa);
+
+  // DEBUG: Verificar imágenes (solo en desarrollo)
   useEffect(() => {
-    console.log('🔍 Home - DEBUG IMÁGENES:');
-    console.log('heroImagen (prop):', heroImagen);
-    console.log('heroImagenActual (estado):', heroImagenActual);
-    console.log('heroImageUrl (cache):', heroImageUrl);
-    console.log('getImageUrl result:', getImageUrl(heroImagenActual));
-  }, [heroImagen, heroImagenActual, heroImageUrl]);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Home - DEBUG IMÁGENES:');
+      console.log('heroImagen (prop):', heroImagen);
+      console.log('heroImagenActual (estado):', heroImagenActual);
+      console.log('heroImageUrl (cache):', heroImageUrl);
+      console.log('heroImageLoading:', heroImageLoading); // ← CORREGIDO
+      console.log('heroImageError:', heroImageError);
+      console.log('getImageUrl result:', getImageUrl(heroImagenActual));
+    }
+  }, [heroImagen, heroImagenActual, heroImageUrl, heroImageLoading, heroImageError]);
 
   // Cambiar título dinámicamente
   useEffect(() => {
-    if (configuracion?.titulo_app) document.title = configuracion.titulo_app;
+    if (configuracion?.titulo_app) {
+      document.title = configuracion.titulo_app;
+    }
   }, [configuracion]);
 
   // EFFECT: Actualizar imagen del Hero cuando cambia la región
@@ -100,32 +117,28 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   // ✅ FUNCIÓN OPTIMIZADA: Confía en el hook useApi para el filtrado
   const obtenerLugaresFiltrados = () => {
     if (resultadosBusqueda) {
-      // useApi ya devuelve solo resultados habilitados
       return regionZonaSeleccionada 
         ? resultadosBusqueda.filter(lugar => lugar.id_region_zona === regionZonaSeleccionada)
         : resultadosBusqueda;
     } 
     if (mostrarDestacados) {
-      // useApi ya devuelve solo lugares destacados habilitados
       return regionZonaSeleccionada 
         ? lugaresDestacados.filter(lugar => lugar.id_region_zona === regionZonaSeleccionada)
         : lugaresDestacados;
     } 
     if (seccionSeleccionada) {
-      // useApi ya devuelve secciones con subsecciones habilitadas
       return regionZonaSeleccionada 
         ? seccionSeleccionada.subsecciones.filter(lugar => lugar.id_region_zona === regionZonaSeleccionada)
         : seccionSeleccionada.subsecciones;
     }
     
-    // useApi ya devuelve solo secciones y subsecciones habilitadas
     return getSeccionesPorRegionZona(regionZonaSeleccionada)
       .flatMap(seccion => seccion.subsecciones);
   };
 
-  // ✅ OPTIMIZADO: useApi ya filtra por región y habilitar
   const obtenerSeccionesFiltradas = () => getSeccionesPorRegionZona(regionZonaSeleccionada);
 
+  // ✅ Mostrar loading mientras se cargan las imágenes críticas
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500 text-center p-8">{error}</div>;
   if (!configuracion) return <LoadingSpinner />;
@@ -136,7 +149,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   // Funciones de búsqueda
   const handleSearch = (termino: string) => {
-    // useApi.buscarLugares ya filtra por habilitar === 1
     const resultados = buscarLugares(termino);
     setResultadosBusqueda(resultados);
     setMostrarDestacados(false);
@@ -161,7 +173,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   // Click en sección
   const handleSeccionClick = (seccion: Seccion) => {
-    // useApi.seccionesHabilitadas ya filtra por habilitar === 1
     setSeccionSeleccionada(seccion);
     setMostrarDestacados(false);
     setSeccionActiva(seccion.nombre_seccion);
@@ -170,7 +181,6 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   // Click en destacados
   const handleDestacadosClick = () => {
-    // useApi.lugaresDestacados ya filtra por habilitar === 1 y destacado === 1
     setMostrarDestacados(true);
     setSeccionSeleccionada(null);
     setSeccionActiva('destacados');
@@ -179,6 +189,11 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
 
   // Toggle menú
   const handleMenuToggle = () => setIsMenuOpen(!isMenuOpen);
+
+  // ✅ URL final para Hero con fallback
+  const finalHeroImageUrl = heroImageError 
+    ? getImageUrl(heroImagenActual)
+    : (heroImageUrl || getImageUrl(heroImagenActual));
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
@@ -203,17 +218,23 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
       />
 
       <main className={`flex-grow transition-all duration-300 ${isMenuOpen ? 'lg:ml-20' : ''}`}>  
-        {/* HERO DINÁMICO */}
+        {/* HERO DINÁMICO CON LOADING STATE */}
         <section id="inicio">
+          {heroImageLoading && (
+            <div className="w-full h-96 bg-gray-800 flex items-center justify-center">
+              <LoadingSpinner />
+            </div>
+          )}
           <Hero 
             titulo={heroTituloActual}
             subtitulo={configuracion.footer_texto}
-            imagenFondo={heroImageUrl || getImageUrl(heroImagenActual)}
+            imagenFondo={finalHeroImageUrl}
             regionZonaSeleccionada={
               regionZonaSeleccionada 
                 ? regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada) 
                 : null
             }
+            isLoading={heroImageLoading} // ← CORREGIDO: ahora heroImageLoading existe
           />
         </section>
 

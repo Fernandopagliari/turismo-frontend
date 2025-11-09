@@ -1,4 +1,4 @@
-// hooks/useImageCache.ts - VERSIÓN CORREGIDA
+// hooks/useImageCache.ts - VERSIÓN MEJORADA CON OPCIONES
 import { useState, useEffect, useRef } from 'react';
 import { getImageUrl } from './useApi';
 
@@ -28,20 +28,38 @@ const cleanupOldCache = () => {
   }
 };
 
-interface UseImageCacheResult {
-  cachedUrl: string;
-  loading: boolean;
-  error: boolean;
+interface UseImageCacheOptions {
+  timeout?: number; // tiempo en milisegundos
+  retries?: number; // número de reintentos
+  enabled?: boolean; // si debe cargar la imagen
 }
 
-export const useImageCache = (imagePath: string | null | undefined): UseImageCacheResult => {
+interface UseImageCacheResult {
+  cachedUrl: string;
+  loading: boolean; // ← este es el equivalente a isLoading
+  error: boolean;
+  retryCount: number;
+}
+
+export const useImageCache = (
+  imagePath: string | null | undefined, 
+  options: UseImageCacheOptions = {}
+): UseImageCacheResult => {
+  const {
+    timeout = 30000, // 30 segundos por defecto
+    retries = 2, // 2 reintentos por defecto
+    enabled = true // cargar por defecto
+  } = options;
+
   const [state, setState] = useState<UseImageCacheResult>({
     cachedUrl: '',
     loading: true,
-    error: false
+    error: false,
+    retryCount: 0
   });
   
   const mountedRef = useRef(true);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -51,9 +69,26 @@ export const useImageCache = (imagePath: string | null | undefined): UseImageCac
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      if (mountedRef.current) {
+        setState({ 
+          cachedUrl: '', 
+          loading: false, 
+          error: false,
+          retryCount: 0 
+        });
+      }
+      return;
+    }
+
     if (!imagePath) {
       if (mountedRef.current) {
-        setState({ cachedUrl: '', loading: false, error: false });
+        setState({ 
+          cachedUrl: '', 
+          loading: false, 
+          error: false,
+          retryCount: 0 
+        });
       }
       return;
     }
@@ -67,13 +102,21 @@ export const useImageCache = (imagePath: string | null | undefined): UseImageCac
     const cached = imageCache.get(imagePath);
     if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
       if (mountedRef.current) {
-        setState({ cachedUrl: cached.url, loading: false, error: false });
+        setState({ 
+          cachedUrl: cached.url, 
+          loading: false, 
+          error: false,
+          retryCount: 0 
+        });
       }
       return;
     }
 
-    // Preload image - CON TIMEOUT MÁS LARGO
-    const loadImage = async () => {
+    // Reset retry count para nueva imagen
+    retryCountRef.current = 0;
+
+    // Preload image con reintentos
+    const loadImage = async (currentRetry = 0) => {
       if (!mountedRef.current) return;
 
       try {
@@ -83,25 +126,28 @@ export const useImageCache = (imagePath: string | null | undefined): UseImageCac
           throw new Error('URL de imagen inválida');
         }
 
-        console.log(`🔄 Cache - Cargando imagen: ${imagePath} -> ${imageUrl}`);
+        console.log(`🔄 Cache - Cargando imagen: ${imagePath} -> ${imageUrl} (intento ${currentRetry + 1}/${retries + 1})`);
         
         const img = new Image();
         img.src = imageUrl;
         
         await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            console.warn(`⏰ Cache - Timeout cargando imagen: ${imagePath}`);
+            reject(new Error('Timeout cargando imagen'));
+          }, timeout);
+
           img.onload = () => {
+            clearTimeout(timeoutId);
             console.log(`✅ Cache - Imagen cargada: ${imagePath}`);
             resolve(true);
           };
+          
           img.onerror = () => {
+            clearTimeout(timeoutId);
             console.error(`❌ Cache - Error cargando imagen: ${imagePath}`);
             reject(new Error('Error cargando imagen'));
           };
-          // ✅ TIMEOUT INCREMENTADO A 30 SEGUNDOS
-          setTimeout(() => {
-            console.warn(`⏰ Cache - Timeout cargando imagen: ${imagePath}`);
-            reject(new Error('Timeout cargando imagen'));
-          }, 30000); // 30 segundos
         });
 
         if (mountedRef.current) {
@@ -113,23 +159,51 @@ export const useImageCache = (imagePath: string | null | undefined): UseImageCac
           setState({ 
             cachedUrl: imageUrl, 
             loading: false, 
-            error: false 
+            error: false,
+            retryCount: currentRetry 
           });
         }
       } catch (error) {
         if (mountedRef.current) {
-          console.warn(`Cache - Error final para ${imagePath}:`, error);
-          setState({ 
-            cachedUrl: '', 
-            loading: false, 
-            error: true 
-          });
+          console.warn(`Cache - Error en intento ${currentRetry + 1} para ${imagePath}:`, error);
+          
+          // Reintentar si aún tenemos intentos disponibles
+          if (currentRetry < retries) {
+            const nextRetry = currentRetry + 1;
+            retryCountRef.current = nextRetry;
+            
+            // Esperar antes del reintento (backoff exponencial)
+            const backoffDelay = Math.min(1000 * Math.pow(2, currentRetry), 10000);
+            console.log(`🔄 Cache - Reintentando en ${backoffDelay}ms...`);
+            
+            setTimeout(() => {
+              if (mountedRef.current) {
+                loadImage(nextRetry);
+              }
+            }, backoffDelay);
+            
+            // Actualizar estado para mostrar que estamos reintentando
+            setState(prev => ({
+              ...prev,
+              retryCount: nextRetry,
+              loading: true
+            }));
+          } else {
+            // No más reintentos, marcar como error
+            console.error(`💥 Cache - Error final después de ${retries + 1} intentos para ${imagePath}`);
+            setState({ 
+              cachedUrl: '', 
+              loading: false, 
+              error: true,
+              retryCount: currentRetry + 1 
+            });
+          }
         }
       }
     };
 
     loadImage();
-  }, [imagePath]);
+  }, [imagePath, enabled, timeout, retries]);
 
   return state;
 };
