@@ -1,4 +1,4 @@
-// Home.tsx - VERSIÓN CORREGIDA
+// Home.tsx - VERSIÓN COMPLETA CORREGIDA
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { Seccion, SubSeccion, RegionZona } from '../types/tourism';
@@ -11,7 +11,7 @@ import { SearchBar } from '../components/places/SearchBar';
 import PlaceDetail from '../components/places/PlaceDetail';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { getImageUrl } from '../hooks/useApi';
-import { useImageCache } from '../hooks/useImageCache'; // ✅ IMPORTAR HOOK DE CACHE
+import { useImageCache } from '../hooks/useImageCache';
 
 interface HomeProps {
   heroTitulo: string;
@@ -46,6 +46,15 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
   const { cachedUrl: heroImageUrl } = useImageCache(heroImagenActual);
   const { cachedUrl: logoUrl } = useImageCache(configuracion?.logo_app_ruta_relativa);
 
+  // DEBUG: Verificar imágenes
+  useEffect(() => {
+    console.log('🔍 Home - DEBUG IMÁGENES:');
+    console.log('heroImagen (prop):', heroImagen);
+    console.log('heroImagenActual (estado):', heroImagenActual);
+    console.log('heroImageUrl (cache):', heroImageUrl);
+    console.log('getImageUrl result:', getImageUrl(heroImagenActual));
+  }, [heroImagen, heroImagenActual, heroImageUrl]);
+
   // Cambiar título dinámicamente
   useEffect(() => {
     if (configuracion?.titulo_app) document.title = configuracion.titulo_app;
@@ -77,7 +86,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     setRegionZonaSeleccionada(null);
     setHeroImagenActual(heroImagen);
     setHeroTituloActual(heroTitulo);
-  }, []);
+  }, [heroImagen, heroTitulo]);
 
   // Manejar cambio de región/zona
   const handleRegionZonaChange = (regionZonaId: number | null) => {
@@ -175,21 +184,21 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
     <div className="min-h-screen bg-gray-900 flex flex-col">
       <Header 
         tituloApp={configuracion.titulo_app}
-        logoApp={logoUrl || getImageUrl(configuracion.logo_app_ruta_relativa)} // ✅ USAR CACHE
+        logoApp={logoUrl || getImageUrl(configuracion.logo_app_ruta_relativa)}
         onMenuToggle={handleMenuToggle}
         isMenuOpen={isMenuOpen}
-        regionesZonas={regionesZonasHabilitadas} // ✅ Ya filtradas por habilitar
+        regionesZonas={regionesZonasHabilitadas}
         regionZonaSeleccionada={regionZonaSeleccionada}
         onRegionZonaChange={handleRegionZonaChange}
       />
 
       <Sidebar 
         isOpen={isMenuOpen}
-        secciones={seccionesHabilitadas} // ✅ Ya filtradas por habilitar
+        secciones={seccionesHabilitadas}
         onSeccionClick={handleSeccionClick}
         onDestacadosClick={handleDestacadosClick}
         onHomeClick={handleHomeClick}
-        lugaresDestacadosCount={lugaresDestacados.length} // ✅ Ya filtrados
+        lugaresDestacadosCount={lugaresDestacados.length}
         seccionActiva={seccionActiva}
       />
 
@@ -199,7 +208,7 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
           <Hero 
             titulo={heroTituloActual}
             subtitulo={configuracion.footer_texto}
-            imagenFondo={heroImageUrl || getImageUrl(heroImagenActual)} // ✅ USAR CACHE
+            imagenFondo={heroImageUrl || getImageUrl(heroImagenActual)}
             regionZonaSeleccionada={
               regionZonaSeleccionada 
                 ? regionesZonasHabilitadas.find(r => r.id_region_zona === regionZonaSeleccionada) 
@@ -282,10 +291,10 @@ const Home: React.FC<HomeProps> = ({ heroTitulo, heroImagen }) => {
             )}
 
             {mostrarTodo && seccionesFiltradas.map(seccion => (
-              seccion.subsecciones.length > 0 && ( // ✅ useApi ya filtra subsecciones habilitadas
+              seccion.subsecciones.length > 0 && (
                 <section key={seccion.id_seccion} className="mb-12">
                   <PlacesGrid 
-                    lugares={seccion.subsecciones} // ✅ Ya vienen habilitadas del hook
+                    lugares={seccion.subsecciones}
                     titulo={seccion.nombre_seccion} 
                     onPlaceClick={setLugarSeleccionado} 
                   />

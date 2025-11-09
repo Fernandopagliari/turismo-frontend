@@ -1,8 +1,7 @@
-// Hero.tsx - VERSIÓN CON CACHE
+// Hero.tsx - VERSIÓN COMPLETA CORREGIDA
 import React, { useState, useEffect } from 'react';
 import { RegionZona } from '../../types/tourism';
-import { useApi } from '../../hooks/useApi'; // ✅ Importar el hook
-import { useImageCache } from '../../hooks/useImageCache'; // ✅ IMPORTAR HOOK DE CACHE
+import { useImageCache } from '../../hooks/useImageCache';
 
 interface HeroProps {
   titulo: string;
@@ -17,21 +16,23 @@ const Hero: React.FC<HeroProps> = ({
   imagenFondo,
   regionZonaSeleccionada = null
 }) => {
-  const { getImageUrl } = useApi(); // ✅ Usar el hook
   const [isVisible, setIsVisible] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageInfo, setImageInfo] = useState({ width: 0, height: 0, ratio: 1 });
   
-  // ✅ USAR CACHE PARA LA IMAGEN
-  const imagenRegion = regionZonaSeleccionada?.imagen_region_zona_ruta_relativa;
-  const { cachedUrl: imagenCacheada, loading: imageLoading } = useImageCache(
-    imagenRegion || imagenFondo
-  );
+  // ✅ CACHE SIMPLIFICADO: Usar directamente la imagenFondo que viene de Home
+  const { cachedUrl: imagenCacheada, loading: imageLoading } = useImageCache(imagenFondo);
 
-  // ✅ Usar getImageUrl del hook (SÍ tiene apiBaseUrl) CON CACHE
-  const imagenParaMostrar = imagenCacheada || getImageUrl(
-    regionZonaSeleccionada?.imagen_region_zona_ruta_relativa || imagenFondo
-  );
+  // DEBUG: Verificar en Hero
+  useEffect(() => {
+    console.log('🔍 Hero - DEBUG IMÁGENES:');
+    console.log('imagenFondo (prop):', imagenFondo);
+    console.log('imagenCacheada (cache):', imagenCacheada);
+    console.log('imageLoading:', imageLoading);
+  }, [imagenFondo, imagenCacheada, imageLoading]);
+
+  // ✅ Usar directamente la URL que viene (ya está procesada por Home)
+  const imagenParaMostrar = imagenCacheada || imagenFondo;
 
   // ✅ Determinar títulos dinámicos
   const tituloParaMostrar = regionZonaSeleccionada 
@@ -51,6 +52,12 @@ const Hero: React.FC<HeroProps> = ({
     
     setImageInfo({ width, height, ratio });
     setImageLoaded(true);
+    console.log('✅ Hero - Imagen cargada:', { width, height, ratio });
+  };
+
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error('❌ Hero - Error cargando imagen:', imagenParaMostrar);
+    setImageLoaded(true); // Para que no quede en loading eterno
   };
 
   // ✅ Calcular estilo adaptativo basado en las dimensiones reales
@@ -61,7 +68,7 @@ const Hero: React.FC<HeroProps> = ({
     if (width === 0 || height === 0) {
       return {
         container: 'h-[50vh] min-h-[400px]',
-        image: 'object-scale-down',
+        image: 'object-cover',
         overlay: 'bg-opacity-50'
       };
     }
@@ -71,7 +78,6 @@ const Hero: React.FC<HeroProps> = ({
     const isLarge = width > 1500 || height > 1000;
     const isWide = ratio > 1.5;
     const isTall = ratio < 0.7;
-    const isSquare = ratio >= 0.9 && ratio <= 1.1;
 
     // Determinar altura del contenedor
     let containerHeight = 'h-[55vh] min-h-[450px]';
@@ -82,19 +88,17 @@ const Hero: React.FC<HeroProps> = ({
     }
 
     // Determinar estrategia de imagen
-    let imageStrategy = 'object-scale-down';
-    if (isLarge && isWide) {
-      imageStrategy = 'object-cover'; // Imágenes grandes y anchas pueden recortarse
-    } else if (isLarge && isTall) {
-      imageStrategy = 'object-contain'; // Imágenes grandes y altas mostrar completas
+    let imageStrategy = 'object-cover';
+    if (isLarge && isTall) {
+      imageStrategy = 'object-contain';
     }
 
     // Determinar overlay
     let overlayOpacity = 'bg-opacity-50';
     if (isSmall) {
-      overlayOpacity = 'bg-opacity-60'; // Más oscuro para imágenes pequeñas
+      overlayOpacity = 'bg-opacity-60';
     } else if (isLarge) {
-      overlayOpacity = 'bg-opacity-40'; // Más claro para imágenes grandes
+      overlayOpacity = 'bg-opacity-40';
     }
 
     return {
@@ -117,7 +121,7 @@ const Hero: React.FC<HeroProps> = ({
     }, 150);
     
     return () => clearTimeout(timer);
-  }, [tituloParaMostrar, subtituloParaMostrar, regionZonaSeleccionada]);
+  }, [tituloParaMostrar, subtituloParaMostrar, regionZonaSeleccionada, imagenFondo]);
 
   return (
     <div className="relative bg-gray-900">
@@ -127,7 +131,7 @@ const Hero: React.FC<HeroProps> = ({
           className={`relative rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center bg-gray-800 ${adaptiveStyles.container}`}
         >
           
-          {/* Imagen principal con estrategia adaptativa Y CACHE */}
+          {/* Imagen principal CON MANEJO DE ERRORES */}
           <img 
             src={imagenParaMostrar}
             alt={tituloParaMostrar}
@@ -135,9 +139,7 @@ const Hero: React.FC<HeroProps> = ({
               imageLoaded && !imageLoading ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
             }`}
             onLoad={handleImageLoad}
-            style={{
-              imageRendering: imageInfo.width < 500 ? 'crisp-edges' : 'auto',
-            }}
+            onError={handleImageError}
           />
           
           {/* Overlay adaptativo */}
@@ -196,14 +198,24 @@ const Hero: React.FC<HeroProps> = ({
             </div>
           </div>
 
-          {/* Loading sutil - MEJORADO CON CACHE */}
+          {/* Loading sutil - MEJORADO */}
           {(imageLoading || !imageLoaded) && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-70">
               <div className="flex flex-col items-center space-y-3">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
                 <p className="text-white text-sm drop-shadow-md">
                   {imageLoading ? 'Cargando imagen...' : 'Procesando...'}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Error state */}
+          {imageLoaded && !imagenParaMostrar && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-700">
+              <div className="text-center text-white">
+                <p className="text-lg">📷</p>
+                <p className="text-sm mt-2">Imagen no disponible</p>
               </div>
             </div>
           )}
