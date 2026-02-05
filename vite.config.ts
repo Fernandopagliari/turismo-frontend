@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+
   server: {
     port: 5173,
     proxy: {
@@ -12,9 +13,10 @@ export default defineConfig({
       }
     },
   },
-  // ✅ CONFIGURACIÓN CORREGIDA - ESTRUCTURA SIMPLE
+
   build: {
-    outDir: 'dist',  // ← Genera en turismo-frontend/dist/
+    outDir: 'dist',        // turismo-frontend/dist
     assetsDir: 'assets',
+    emptyOutDir: true,     // 🔹 LIMPIA dist antes de generar
   }
 })

@@ -120,3 +120,33 @@ main {
   height: 100%;
   width: 100%;
 }
+
+/* Animación para cards de lugares (grid) */
+
+@keyframes highlightFade {
+  from {
+    background-color: #fde047;
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    background-color: #fde047;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-highlight {
+  animation: highlightFade 0.35s ease-out;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

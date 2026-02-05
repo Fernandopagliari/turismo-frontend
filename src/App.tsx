@@ -4,85 +4,83 @@ import { useApi } from "./hooks/useApi";
 import Home from "./pages/Home";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 import "./index.css";
-import 'leaflet/dist/leaflet.css';
+import "leaflet/dist/leaflet.css";
 
 const App: React.FC = () => {
-  const { configuracion, loading, error, apiBaseUrl } = useApi(); // ✅ AGREGAR apiBaseUrl
+  const {
+    configuracion,
+    seccionesHabilitadas,
+    lugaresDestacados,
+    regionesZonasHabilitadas,
+    getSeccionesPorRegionZona,
+    buscarLugares,
+    loading,
+    error
+  } = useApi();
 
-  // ✅ AGREGAR DIAGNÓSTICO
-  console.log("🎯 App - Estado actual:");
-  console.log("   loading:", loading);
-  console.log("   configuracion:", configuracion);
-  console.log("   error:", error);
-  console.log("   habilitar:", configuracion?.habilitar);
-  console.log("   apiBaseUrl:", apiBaseUrl); // ✅ NUEVO: ver apiBaseUrl
+  console.log("🎯 App - Estado actual:", {
+    loading,
+    configuracion,
+    error
+  });
 
+  /* =========================
+     LOADING
+     ========================= */
   if (loading) {
-    console.log("🔄 App: Mostrando LoadingSpinner");
     return <LoadingSpinner />;
   }
 
+  /* =========================
+     ERROR
+     ========================= */
   if (error) {
-    console.log("❌ App: Error detectado:", error);
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Error de conexión</h1>
-          <p className="text-red-500 mb-2">{error}</p>
+      <div className="flex justify-center items-center min-h-screen bg-gray-900 text-white">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4">❌ Error de conexión</h1>
+          <p className="text-red-400 mb-3">{error}</p>
           <p>No se pudo cargar la configuración.</p>
         </div>
       </div>
     );
   }
 
-  // ✅ NUEVA VALIDACIÓN: Esperar a que apiBaseUrl esté disponible
-  if (!apiBaseUrl) {
-    console.log("🔄 App: Esperando apiBaseUrl...");
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <LoadingSpinner />
-          <p className="mt-4">Configurando URLs...</p>
-          <p className="text-sm text-gray-500">API Base: {apiBaseUrl || 'Cargando...'}</p>
-        </div>
-      </div>
-    );
-  }
-
+  /* =========================
+     APP DESHABILITADA
+     ========================= */
   if (!configuracion || configuracion.habilitar !== 1) {
-    console.log("⚠️ App: Configuración no disponible o deshabilitada");
-    console.log("   Configuración completa:", configuracion);
-    console.log("   Valor de habilitar:", configuracion?.habilitar);
-    
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen bg-gray-900 text-white">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Aplicación no disponible</h1>
+          <h1 className="text-2xl font-bold mb-4">🚫 Aplicación no disponible</h1>
           <p>La aplicación está temporalmente deshabilitada.</p>
-          {configuracion && (
-            <p className="text-sm text-gray-500 mt-2">
-              Estado: {configuracion.habilitar === 1 ? 'Habilitada' : 'Deshabilitada'}
-            </p>
-          )}
         </div>
       </div>
     );
   }
 
-  console.log("✅ App: Configuración válida, renderizando Home");
-  
+  /* =========================
+     APP OK
+     ========================= */
   return (
     <Router>
       <div className="App font-sans">
         <Routes>
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
               <Home
                 heroTitulo={configuracion.hero_titulo}
                 heroImagen={configuracion.hero_imagen_ruta_relativa}
+                configuracion={configuracion}
+                seccionesHabilitadas={seccionesHabilitadas}
+                lugaresDestacados={lugaresDestacados}
+                regionesZonasHabilitadas={regionesZonasHabilitadas}
+                getSeccionesPorRegionZona={getSeccionesPorRegionZona}
+                buscarLugares={buscarLugares}
               />
-            } 
+            }
           />
         </Routes>
       </div>

@@ -1,0 +1,39 @@
+
+INSTRUCCIONES PARA TURISMO APP - PC NUEVA
+==========================================
+
+📍 IMÁGENES:
+Las imágenes se guardan en:
+public/assets/imagenes/
+
+Puedes crear subcarpetas dentro según necesites:
+public/assets/imagenes/hoteles/
+public/assets/imagenes/restaurantes/
+public/assets/imagenes/lugares/
+etc.
+
+🔧 HERRAMIENTAS RECOMENDADAS (OPCIONAL):
+
+1. GIT (Control de versiones):
+   • Descarga: https://git-scm.com/download/win
+   • Ventaja: Las imágenes se sincronizan automáticamente
+   • Sin Git: Las imágenes se guardan solo localmente
+
+2. NODE.JS (Para actualizar frontend):
+   • Descarga: https://nodejs.org/
+   • Ventaja: Puedes hacer build y deploy del frontend
+   • Sin Node.js: El frontend funciona igual
+
+🚀 FUNCIONES DISPONIBLES:
+
+✅ YA FUNCIONAN:
+• Sistema completo de turismo
+• Gestión de imágenes local
+• Base de datos MySQL
+• Interfaz PyQt5 completa
+
+⚡ PARA ACTIVAR FUNCIONES AVANZADAS:
+1. Instala Git → Activará sincronización automática
+2. Instala Node.js → Activará build/deploy frontend
+
+📞 SOPORTE: soporte@turismoapp.com

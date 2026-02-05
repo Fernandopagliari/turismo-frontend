@@ -56,11 +56,19 @@ const Footer: React.FC<FooterProps> = ({ configuracion }) => {
         </div>
 
         {/* Línea inferior */}
-        <div className="border-t border-gray-700 mt-8 pt-4 text-center">
+        <div className="border-t border-gray-700 mt-8 pt-4 text-center space-y-2">
           <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} {configuracion.titulo_app}. Todos los derechos reservados.           Creado por: Fernando Ariel Pagliari.
+            © {new Date().getFullYear()} {configuracion.titulo_app}. Todos los derechos reservados. Creado por: Fernando Ariel Pagliari.
           </p>
+
+          {/* 👁️ Contador de visitas */}
+          {typeof configuracion.visitas_app === 'number' && (
+            <p className="text-gray-500 text-xs">
+              👁️ {configuracion.visitas_app.toLocaleString()} visitas
+            </p>
+          )}
         </div>
+
       </div>
     </footer>
   );

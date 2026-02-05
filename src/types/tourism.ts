@@ -5,6 +5,7 @@ export interface Configuracion {
   icono_hamburguesa_ruta_relativa: string;
   icono_cerrar_ruta_relativa: string;
   hero_titulo: string;
+  hero_subtitulo?: string;
   hero_imagen_ruta_relativa: string;
   footer_texto: string;
   direccion_facebook: string;
@@ -13,7 +14,9 @@ export interface Configuracion {
   direccion_youtube: string;
   correo_electronico: string;
   habilitar: number;
+  visitas_app?: number;
 }
+
 
 // ✅ NUEVO TIPO para la configuración del frontend
 export interface FrontendConfig {
@@ -38,10 +41,11 @@ export interface SubSeccion {
   imagen_ruta_relativa: string;
   icono_ruta_relativa: string;
   itinerario_maps: string;
+  likes?: number;
   habilitar: number;
   fecha_desactivacion: string | null;
   orden: number;
-  destacado: number;  
+  destacado?: number;  
   foto1_ruta_relativa: string;
   foto2_ruta_relativa: string;
   foto3_ruta_relativa: string;

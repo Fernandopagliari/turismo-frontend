@@ -1,154 +1,113 @@
-// useApi.tsx - VERSIÓN OPTIMIZADA
-import { useState, useEffect } from 'react';
-import { Configuracion, Seccion, SubSeccion, RegionZona, FrontendConfig } from '../types/tourism';
+import { useState, useEffect } from "react";
+import {
+  Configuracion,
+  Seccion,
+  SubSeccion,
+  RegionZona
+} from "../types/tourism";
 
-// ✅ getImageUrl (igual que tenías)
-export const getImageUrl = (imagePath: string, apiBaseUrl: string = ''): string => {
-  if (!imagePath) return '/assets/placeholder.svg';
-  
-  if (imagePath.startsWith('http')) return imagePath;
-  
-  if (apiBaseUrl) {
-    const cleanImagePath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    const fullUrl = `${apiBaseUrl}/${cleanImagePath}`;
-    return fullUrl;
+/* =====================================================
+   API BASE — AUTO ENTORNO + ENV
+   ===================================================== */
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:5000"
+    : "https://turismo-backend-av60.onrender.com");
+
+/* =====================================================
+   FETCH HELPER
+   ===================================================== */
+
+const apiFetch = async (endpoint: string) => {
+  const res = await fetch(`${API_BASE}${endpoint}`);
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
   }
-  
-  if (imagePath.startsWith('assets/')) {
-    return `/${imagePath}`;
-  }
-  
-  if (imagePath.startsWith('/')) {
-    return imagePath;
-  }
-  
-  return `/${imagePath}`;
+
+  return res.json();
 };
 
+/* =====================================================
+   HOOK PRINCIPAL
+   ===================================================== */
+
 export const useApi = () => {
-  const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
-  const [frontendConfig, setFrontendConfig] = useState<FrontendConfig | null>(null);
+  const [configuracion, setConfiguracion] =
+    useState<Configuracion | null>(null);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [regionesZonas, setRegionesZonas] = useState<RegionZona[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getApiBaseUrl = (): string => {
-    return frontendConfig?.api_base_url || '';
-  };
+  /* =====================================================
+     UTILIDAD: validar subsección activa
+     ===================================================== */
 
-  const getImageUrlWithConfig = (imagePath: string): string => {
-    const apiBaseUrl = getApiBaseUrl();
-    return getImageUrl(imagePath, apiBaseUrl);
-  };
+  const isSubSeccionActiva = (sub: SubSeccion): boolean => {
+    if (sub.habilitar !== 1) return false;
 
-  const buildUrl = (endpoint: string): string => {
-    const apiBaseUrl = getApiBaseUrl();
-    
-    if (apiBaseUrl) {
-      return `${apiBaseUrl}/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
-    } else {
-      return `/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    if (sub.fecha_desactivacion) {
+      const hoy = new Date();
+      const fin = new Date(sub.fecha_desactivacion);
+      if (hoy > fin) return false;
     }
+
+    return true;
   };
 
-  // ✅ FETCH functions (igual que tenías)
-  const fetchFrontendConfig = async (): Promise<boolean> => {
+  /* =====================================================
+     FETCHS
+     ===================================================== */
+
+  const fetchConfiguracion = async () => {
     try {
-      const url = '/api/config/frontend';
-      const res = await fetch(url);
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const data: FrontendConfig = await res.json();
-      
-      if (data && data.status === 'ok') {
-        setFrontendConfig(data);
-        return true;
-      }
-      return false;
+      const data: Configuracion =
+        await apiFetch("/api/configuracion");
+      setConfiguracion(data);
     } catch (err) {
-      console.error("❌ Error frontend config:", err);
-      return false;
+      console.error(err);
+      setError("Error cargando configuración");
     }
   };
 
-  const fetchConfiguracion = async (): Promise<boolean> => {
+  const fetchSecciones = async () => {
     try {
-      const url = buildUrl('/configuracion');
-      const res = await fetch(url);
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const data = await res.json();
-      if (data && !data.error) {
-        setConfiguracion(data);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error("❌ Error config:", err);
-      return false;
+      const data = await apiFetch("/api/secciones");
+      setSecciones(data || []);
+    } catch {
+      throw new Error("Secciones no disponibles");
     }
   };
 
-  const fetchSecciones = async (): Promise<boolean> => {
+  const fetchRegionesZonas = async () => {
     try {
-      const url = buildUrl('/secciones');
-      const res = await fetch(url);
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const data = await res.json();
-      if (data && Array.isArray(data)) {
-        setSecciones(data);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error("❌ Error secciones:", err);
-      return false;
+      const data = await apiFetch("/api/regiones");
+      setRegionesZonas(data || []);
+    } catch {
+      throw new Error("Regiones/Zonas no disponibles");
     }
   };
 
-  const fetchRegionesZonas = async (): Promise<boolean> => {
-    try {
-      const url = buildUrl('/regiones');
-      const res = await fetch(url);
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const data = await res.json();
-      if (data && Array.isArray(data)) {
-        setRegionesZonas(data);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error("❌ Error regiones:", err);
-      return false;
-    }
-  };
+  /* =====================================================
+     CARGA GENERAL
+     ===================================================== */
 
   const cargarDatos = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const frontendConfigSuccess = await fetchFrontendConfig();
-      
-      if (frontendConfigSuccess) {
-        const [configSuccess, seccionesSuccess, regionesSuccess] = await Promise.all([
-          fetchConfiguracion(),
-          fetchSecciones(),
-          fetchRegionesZonas()
-        ]);
-      } else {
-        throw new Error('No se pudo cargar la configuración frontend');
-      }
+      await Promise.all([
+        fetchConfiguracion(),
+        fetchSecciones(),
+        fetchRegionesZonas()
+      ]);
     } catch (err) {
-      setError('Error cargando datos');
-      console.error('❌ Error en carga:', err);
+      console.error(err);
+      setError("Error cargando datos de la aplicación");
     } finally {
       setLoading(false);
     }
@@ -158,70 +117,100 @@ export const useApi = () => {
     cargarDatos();
   }, []);
 
-  // ✅ FUNCIONES CORREGIDAS - FILTRAR POR HABILITAR = 1
+  /* =====================================================
+     HELPERS
+     ===================================================== */
 
   const getSeccionesHabilitadas = (): Seccion[] =>
-    secciones.filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
-
-  const getAllSubSecciones = (): SubSeccion[] =>
-    secciones.flatMap(seccion => seccion.subsecciones || []);
-
-  const getAllSubSeccionesHabilitadas = (): SubSeccion[] =>
-    getAllSubSecciones().filter(s => s.habilitar === 1).sort((a, b) => a.orden - b.orden);
-
-  // ✅ CORREGIDO: Ahora también verifica que la sección esté habilitada
-  const getSubSeccionesPorSeccion = (idSeccion: number): SubSeccion[] => {
-    const seccion = getSeccionesHabilitadas().find(s => s.id_seccion === idSeccion);
-    return seccion?.subsecciones?.filter(sub => sub.habilitar === 1) || [];
-  };
-
-  const getSubSeccionesPorRegionZona = (regionZonaId: number | null): SubSeccion[] => {
-    const todas = getAllSubSeccionesHabilitadas();
-    return regionZonaId ? todas.filter(s => s.id_region_zona === regionZonaId) : todas;
-  };
-
-  // ✅ CORREGIDO: Usa getSeccionesHabilitadas() en lugar de secciones crudas
-  const getSeccionesPorRegionZona = (regionZonaId: number | null): Seccion[] => {
-    const subFiltradas = getSubSeccionesPorRegionZona(regionZonaId);
-    const ids = [...new Set(subFiltradas.map(s => s.id_seccion))];
-    
-    return getSeccionesHabilitadas()
+    secciones
+      .filter(s => s.habilitar === 1)
+      .sort((a, b) => a.orden - b.orden)
       .map(s => ({
         ...s,
-        subsecciones: subFiltradas.filter(sub => sub.id_seccion === s.id_seccion)
-      }))
-      .filter(s => ids.includes(s.id_seccion) && s.subsecciones.length > 0);
+        subsecciones: (s.subsecciones || [])
+          .filter(isSubSeccionActiva)
+          .sort((a, b) => a.orden - b.orden)
+      }));
+
+  const buscarLugares = async (
+    termino: string
+  ): Promise<SubSeccion[]> => {
+    if (!termino.trim()) return [];
+
+    return secciones.flatMap(s =>
+      (s.subsecciones || []).filter(
+        sub =>
+          isSubSeccionActiva(sub) &&
+          sub.nombre_sub_seccion
+            .toLowerCase()
+            .includes(termino.toLowerCase())
+      )
+    );
   };
 
-  const buscarLugares = (termino: string): SubSeccion[] =>
-    getAllSubSeccionesHabilitadas().filter(s => 
-      s.nombre_sub_seccion.toLowerCase().includes(termino.toLowerCase())
-    );
-
   const getLugaresDestacados = (): SubSeccion[] =>
-    getAllSubSeccionesHabilitadas().filter(s => s.destacado === 1).slice(0, 8);
+    secciones
+      .flatMap(s => s.subsecciones || [])
+      .filter(sub => sub.destacado === 1 && isSubSeccionActiva(sub))
+      .sort((a, b) => a.orden - b.orden)
+      .slice(0, 8);
 
   const getRegionesZonasHabilitadas = (): RegionZona[] =>
-    regionesZonas.filter(r => r.habilitar === 1).sort((a, b) => a.orden - b.orden);
+    regionesZonas
+      .filter(r => r.habilitar === 1)
+      .sort((a, b) => a.orden - b.orden);
+
+  const getSeccionesPorRegionZona = (
+    regionZonaId: number | null
+  ): Seccion[] =>
+    getSeccionesHabilitadas()
+      .map(s => ({
+        ...s,
+        subsecciones: s.subsecciones.filter(
+          sub => !regionZonaId || sub.id_region_zona === regionZonaId
+        )
+      }))
+      .filter(s => s.subsecciones.length > 0);
+
+  const darLike = async (id: number): Promise<number> => {
+    const res = await fetch(
+      `${API_BASE}/api/subsecciones/${id}/like`,
+      { method: "POST" }
+    );
+
+    if (!res.ok) throw new Error("Error like");
+
+    const data = await res.json();
+    return data.likes;
+  };
+
+
+  /* =====================================================
+     RETURN
+     ===================================================== */
 
   return {
     configuracion,
-    frontendConfig,
-    regionesZonas,
-    secciones,
-    subSecciones: getAllSubSeccionesHabilitadas(),
     seccionesHabilitadas: getSeccionesHabilitadas(),
     regionesZonasHabilitadas: getRegionesZonasHabilitadas(),
     lugaresDestacados: getLugaresDestacados(),
-    getSubSeccionesHabilitadas: getSubSeccionesPorSeccion,
-    getSubSeccionesPorRegionZona,
-    getSeccionesPorRegionZona,
     buscarLugares,
-    getImageUrl: getImageUrlWithConfig,
-    buildUrl,
+    getSeccionesPorRegionZona,
     loading,
     error,
     refetch: cargarDatos,
-    apiBaseUrl: getApiBaseUrl()
+    darLike
   };
+};
+
+/* =====================================================
+   IMÁGENES — FLASK COMPATIBLE
+   ===================================================== */
+
+export const getImageUrl = (ruta?: string | null): string => {
+  if (!ruta) return "/placeholder.jpg";
+
+  if (ruta.startsWith("http")) return ruta;
+
+  return `${API_BASE}${ruta.startsWith("/") ? ruta : "/" + ruta}`;
 };
